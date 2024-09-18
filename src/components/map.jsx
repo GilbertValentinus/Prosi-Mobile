@@ -1,39 +1,162 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import axios from "axios";
 
-import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import LocationInfo from './location-info';
+import { mapImages } from "../assets";
 
-let DefaultIcon = L.icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
+const { clickLocationIcon, currentLocationIcon } = mapImages;
+
+const CurrentLocationIcon = L.icon({
+  iconUrl: currentLocationIcon,
+  iconSize: [25, 25],
 });
 
-L.Marker.prototype.options.icon = DefaultIcon;
+const ClickLocationIcon = L.icon({
+  iconUrl: clickLocationIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+const fetchAddress = async (lat, lng) => {
+  try {
+    const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: {
+        lat: lat,
+        lon: lng,
+        format: 'json',
+        addressdetails: 1,
+      },
+    });
+
+    if (response.data) {
+      return {
+        name: response.data.address.road || 'Unknown Road',
+        fullAddress: `${response.data.address.road || ''}, ${response.data.address.suburb || ''}, ${response.data.address.city || ''}, ${response.data.address.state || ''}, ${response.data.address.country || ''}`,
+        plusCode: 'N/A',  
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching address:', error);
+    return {
+      name: 'Unknown Road',
+      fullAddress: 'Unknown Address',
+      plusCode: 'N/A',
+    };
+  }
+};
+
+function CurrentLocationMarker() {
+  const [currentPosition, setCurrentPosition] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setCurrentPosition([latitude, longitude]);
+        },
+        (err) => {
+          console.error(err);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    }
+  }, []);
+
+  return currentPosition ? (
+    <Marker position={currentPosition} icon={CurrentLocationIcon}>
+      <Popup>
+        You are here: <br /> Latitude: {currentPosition[0]} <br /> Longitude: {currentPosition[1]}
+      </Popup>
+    </Marker>
+  ) : null;
+}
+
+function ClickLocationMarker({ setClickedLocation }) {
+  useMapEvent("click", (event) => {
+    setClickedLocation({
+      lat: event.latlng.lat,
+      lng: event.latlng.lng
+    });
+  });
+
+  return null;
+}
 
 function Map() {
-    const position = [-6.901179, 107.623272];
+  const defaultPosition = [-6.901179, 107.623272];
+  const [clickedLocation, setClickedLocation] = useState(null);
+  const [locationInfo, setLocationInfo] = useState(null);
+
+  useEffect(() => {
+    if (clickedLocation) {
+      fetchAddress(clickedLocation.lat, clickedLocation.lng).then(info => {
+        setLocationInfo(info);
+      });
+    }
+  }, [clickedLocation]);
 
   return (
-    <MapContainer
-      center={position}
-      zoom={13}
-      style={{ height: "100vh", width: "100%", zIndex: 0 }}
-    >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://carto.com/attributions">CartoDB</a>'
-      />
-      <Marker position={position}>
-        <Popup>You are here.</Popup>
-      </Marker>
-    </MapContainer>
+    <div className="relative flex flex-col h-screen">
+      <MapContainer
+        center={defaultPosition}
+        zoom={13}
+        style={{ height: "100vh", width: "100%", zIndex: 998 }}
+      >
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CartoDB</a>'
+        />
+        <CurrentLocationMarker />
+        <ClickLocationMarker setClickedLocation={setClickedLocation} />
+        {clickedLocation && (
+          <Marker
+            position={[clickedLocation.lat, clickedLocation.lng]}
+            icon={ClickLocationIcon}
+          >
+            <Popup>
+              Clicked Location: <br /> Latitude: {clickedLocation.lat} <br /> Longitude: {clickedLocation.lng}
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+
+      {/* Komponen untuk menampilkan informasi lokasi yang diklik */}
+      {locationInfo && (
+        <div className="absolute bottom-0 left-0 right-0 bg-[#222745] text-white p-4 overflow-y-scroll h-[50%] rounded-[20px]" style={{ zIndex: 999 }}>
+          <LocationInfo locationData={{
+            name: locationInfo.name,
+            fullAddress: locationInfo.fullAddress,
+            distance: "N/A",
+            plusCode: locationInfo.plusCode,
+            coordinates: `${clickedLocation.lat}, ${clickedLocation.lng}`
+          }} />
+        </div>
+      )}
+    </div>
   );
 }
 
 export default Map;
+
+
+
+
+
+
+
+
+
+
 
 
 //map default
