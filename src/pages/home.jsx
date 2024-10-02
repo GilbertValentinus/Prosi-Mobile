@@ -1,6 +1,7 @@
 import React from "react";
-import { component } from "../index";
-const { Map, Navbar, Searchbar, LocationInfo } = component;
+// import { Map, Navbar, Searchbar, LocationInfo } from '../index';
+import { Map, Navbar, Searchbar, LocationInfo } from '../components/index';
+
 
 function Home() {
   return (
@@ -8,9 +9,10 @@ function Home() {
       <Searchbar />
       <LocationInfo />
       <Map />
-      <Navbar />
+      <Navbar/>
     </div>
   );
 }
 
 export default Home;
+
