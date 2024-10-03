@@ -19,7 +19,7 @@ function Navbar() {
     >
       <div className="flex justify-evenly p-4 text-white">
         <Link
-          to="/telusuri"
+          to="/"
           className="flex flex-col items-center justify-center flex-1 text-center  font-[600] text-[11px]"
         >
           <img src={telusuriIcon} alt="Telusuri" className="h-5 mb-1" /> {/* Gambar */}

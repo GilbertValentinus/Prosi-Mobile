@@ -1,16 +1,18 @@
 import React from "react";
-import { component } from "../index";
-const { Map, Navbar, Searchbar, LocationInfo } = component;
+// import { Map, Navbar, Searchbar, LocationInfo } from '../index';
+import { Map, Navbar, Searchbar, LocationInfo } from '../components/index';
+
 
 function Home() {
   return (
-    <div className="relative">
+    <div className="relative overflow-y-hidden">
       <Searchbar />
       <LocationInfo />
       <Map />
-      <Navbar />
+      <Navbar/>
     </div>
   );
 }
 
 export default Home;
+

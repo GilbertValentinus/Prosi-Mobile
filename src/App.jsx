@@ -9,6 +9,9 @@ import KlaimLapak3 from "./pages/claimlapak3";
 import KlaimLapak4 from "./pages/claimlapak4";
 import KlaimLapak5 from "./pages/claimlapak5";
 import KlaimLapak6 from "./pages/claimlapak6";
+import Favorit from "./pages/favorit";
+import Lapak from "./pages/lapak";
+
 function App() {
   return (
     <Router>
@@ -22,8 +25,8 @@ function App() {
         <Route path="/claimlapak4" element={<KlaimLapak4 /> } />
         <Route path="/claimlapak5" element={<KlaimLapak5 /> } />
         <Route path="/claimlapak6" element={<KlaimLapak6 /> } />
-        
-
+        <Route path="/favorit" element={<Favorit /> } />
+        <Route path="/lapak" element={<Lapak /> } />
       </Routes>
     </Router>
   )
