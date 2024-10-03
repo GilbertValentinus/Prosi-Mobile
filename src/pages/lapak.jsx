@@ -1,6 +1,5 @@
 import React from "react";
-import { component } from "..";
-const { LapakList, Navbar } = component;
+import { LapakList, Navbar } from "../components/index";  
 
 function Lapak() {
   return (

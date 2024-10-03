@@ -1,6 +1,5 @@
 import React from "react";
-import { component } from "..";
-const { FavoriteList, Navbar } = component;
+import { FavoriteList, Navbar } from "../components/index";
 
 function Favorit() {
   return (
