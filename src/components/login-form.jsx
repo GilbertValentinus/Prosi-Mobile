@@ -26,7 +26,7 @@ function LoginForm() {
 
       if (data.success) {
         setMessage('Login successful!');
-        navigate('/home'); // Redirect to home or other page after login
+        navigate('/'); // Redirect to home or other page after login
       } else {
         setMessage('Invalid email or password');
       }
