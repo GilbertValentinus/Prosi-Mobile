@@ -4,3 +4,5 @@ export { default as Searchbar } from "./searchbar";
 export { default as LoginForm } from "./login-form";
 export { default as SignupForm } from "./signup-form";
 export { default as LocationInfo } from "./location-info";
+export { default as FavoriteList } from "./favorite-list";
+export { default as LapakList } from "./lapak-list";

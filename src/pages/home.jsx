@@ -4,7 +4,7 @@ const { Map, Navbar, Searchbar, LocationInfo } = component;
 
 function Home() {
   return (
-    <div className="relative">
+    <div className="relative overflow-y-hidden">
       <Searchbar />
       <LocationInfo />
       <Map />
