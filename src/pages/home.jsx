@@ -1,15 +1,18 @@
 import React from "react";
-import { component } from "../index";
-const { Map, Navbar, Searchbar } = component;
+// import { Map, Navbar, Searchbar, LocationInfo } from '../index';
+import { Map, Navbar, Searchbar, LocationInfo } from '../components/index';
+
 
 function Home() {
   return (
     <div className="relative">
       <Searchbar />
+      <LocationInfo />
       <Map />
-      <Navbar />
+      <Navbar/>
     </div>
   );
 }
 
 export default Home;
+

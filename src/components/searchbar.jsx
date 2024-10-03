@@ -12,7 +12,7 @@ function Searchbar() {
   };
 
   return (
-    <div className="relative z-50">
+    <div className="relative" style={{ zIndex: 1000 }}>
       {/* Searchbar */}
       <div className="flex bg-[#171D34] h-[50px] justify-between gap-8 px-4">
         <img
