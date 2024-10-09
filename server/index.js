@@ -2,13 +2,30 @@ import express from "express";
 import mysql from "mysql";
 import bodyParser from "body-parser";
 import cors from "cors";
+import session from "express-session";
+
 
 const app = express();
 const port = 8080;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Change to your frontend origin
+  credentials: true // Allow credentials to be sent
+}));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+app.use(session({
+  secret: 'secret', // Replace with a strong secret
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    secure: false, // Set to true if using HTTPS
+    httpOnly: true,
+  }
+}));
 
 const pool = mysql.createPool({
   multipleStatements: true,
@@ -29,12 +46,49 @@ app.post('/api/login', (req, res) => {
         return res.status(500).json({ error: "Database error" });
       }
       if (results.length > 0) {
+        req.session.userId = results[0].id_pengguna;
+
+        console.log("User logged in with ID:", req.session.userId);
+
+        console.log(results);
+
         res.json({ success: true, message: "Login successful" });
       } else {
         res.json({ success: false, message: "Invalid email or password" });
       }
     });
   });
+
+// Logout route to clear the session
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Logout failed" });
+    }
+    res.json({ success: true, message: "Logout successful" });
+  });
+});
+
+// Route to check if the user is logged in and get user info
+app.get('/api/user', (req, res) => {
+  if (req.session.userId) {
+    const query = "SELECT * FROM pengguna WHERE idpengguna = ?";
+    pool.query(query, [req.session.userId], (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      if (results.length > 0) {
+        res.json({ success: true, user: results[0] });
+      } else {
+        res.status(404).json({ success: false, message: "User not found" });
+      }
+    });
+  } else {
+    res.status(401).json({ success: false, message: "Not logged in" });
+  }
+});
+
 
   app.post('/api/signup', (req, res) => {
     const { username, password, fullName, email, phone } = req.body;
