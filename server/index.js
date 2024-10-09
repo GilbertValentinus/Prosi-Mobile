@@ -3,6 +3,7 @@ import mysql from "mysql";
 import bodyParser from "body-parser";
 import cors from "cors";
 import session from "express-session";
+import multer from 'multer';
 
 
 const app = express();
@@ -34,6 +35,17 @@ const pool = mysql.createPool({
   database: "prosi",
   host: "127.0.0.1",
 });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage });
 
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
@@ -72,7 +84,7 @@ app.post('/api/logout', (req, res) => {
 // Route to check if the user is logged in and get user info
 app.get('/api/user', (req, res) => {
   if (req.session.userId) {
-    const query = "SELECT * FROM pengguna WHERE idpengguna = ?";
+    const query = "SELECT * FROM pengguna WHERE id_pengguna = ?";
     pool.query(query, [req.session.userId], (err, results) => {
       if (err) {
         console.error("Database error:", err);
@@ -134,6 +146,36 @@ app.get('/api/test-db', (req, res) => {
       }
       res.json({ success: true, message: 'Connected to the database', result: results });
     });
+  });
+  
+  app.post('/api/claim-lapak', upload.single('foto'), (req, res) => {
+    const { 
+      userId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak
+    } = req.body;
+    const fotoPath = req.file ? req.file.path : null;
+  
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+  
+    const insertLapakQuery = `
+      INSERT INTO lapak (id_pengguna, nama_lapak, kategori_lapak, lokasi_lapak,
+                        nomor_telepon, deskripsi_lapak, foto_lapak)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+  
+    pool.query(insertLapakQuery, 
+      [userId, namaLapak, kategoriLapak, alamat, 
+       telepon, deskripsiLapak, fotoPath],
+      (err, results) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ success: false, message: 'Failed to save lapak' });
+        }
+        res.json({ success: true, message: 'Lapak saved successfully' });
+      }
+    );
   });
   
 

@@ -69,15 +69,27 @@ function ClaimForm() {
     e.preventDefault();
     
     try {
+      // Dapatkan userId dari sesi login
+      const userResponse = await fetch('http://localhost:8080/api/user', { credentials: 'include' });
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id_pengguna;
+  
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+  
       const formDataToSend = new FormData();
-      
+  
+      // Tambahkan userId ke dalam formData
+      formDataToSend.append('userId', userId);
+  
       // Append basic form fields
       Object.keys(formData).forEach(key => {
         if (key !== 'selectedFile' && key !== 'previewUrl' && key !== 'jamBuka') {
           formDataToSend.append(key, formData[key]);
         }
       });
-
+  
       // Append operating hours
       formDataToSend.append('jamBuka', JSON.stringify(formData.jamBuka));
       
@@ -85,24 +97,17 @@ function ClaimForm() {
       if (formData.selectedFile) {
         formDataToSend.append('foto', formData.selectedFile);
       }
-
-      // Append user ID from localStorage
-      const id_pengguna = localStorage.getItem('id_pengguna');
-      if (!id_pengguna) {
-        throw new Error('User ID not found');
-      }
-      formDataToSend.append('id_pengguna', id_pengguna);
-
+  
       const response = await fetch('http://localhost:8080/api/claim-lapak', {
         method: 'POST',
         body: formDataToSend,
+        credentials: 'include', // Sertakan cookie sesi
       });
-
+  
       const data = await response.json();
-      
+  
       if (data.success) {
         alert('Data lapak berhasil disimpan!');
-        // Reset form or redirect
       } else {
         throw new Error(data.message || 'Failed to save data');
       }
@@ -111,6 +116,8 @@ function ClaimForm() {
       alert(error.message || 'Gagal mengirim data ke server');
     }
   };
+  
+  
 
   return (
     <div style={styles.formContainer}>
