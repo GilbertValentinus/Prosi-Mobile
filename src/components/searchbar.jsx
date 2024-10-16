@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { searchbarImages } from "../assets";
 
@@ -6,9 +6,39 @@ const { hamburgerIcon } = searchbarImages;
 
 function Searchbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery) {
+        fetchSearchResults();
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const fetchSearchResults = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/search?query=${encodeURIComponent(searchQuery)}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSearchResults(data.results);
+      } else {
+        console.error('Search failed:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching search results:', error);
+    }
   };
 
   return (
@@ -24,8 +54,23 @@ function Searchbar() {
         <input
           type="text"
           className="bg-[#222745] text-white flex-1 px-4 py-2 rounded-[8px] w-full h-[35px] my-auto"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search for places..."
         />
       </div>
+
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div className="absolute w-full bg-[#222745] mt-1 rounded-b-[8px] max-h-[300px] overflow-y-auto">
+          {searchResults.map((result) => (
+            <div key={result.id_lapak} className="p-2 hover:bg-[#2c3252] cursor-pointer">
+              <h3 className="text-white font-semibold">{result.nama_lapak}</h3>
+              <p className="text-gray-300 text-sm">{result.lokasi_lapak}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Sidebar Overlay */}
       {isSidebarOpen && (

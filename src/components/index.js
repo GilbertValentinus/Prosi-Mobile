@@ -12,4 +12,4 @@ export { default as ClaimForm5 } from "./claimlapak5-form";
 export { default as ClaimForm6 } from "./claimlapak6-form";
 export { default as FavoriteList } from "./favorite-list";
 export { default as LapakList } from "./lapak-list";
-
+export { default as PusatBantuan } from "./pusatbantuan";
