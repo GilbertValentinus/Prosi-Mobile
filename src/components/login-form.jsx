@@ -17,6 +17,7 @@ function LoginForm() {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
+           credentials: 'include',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }), // Send email and password as JSON

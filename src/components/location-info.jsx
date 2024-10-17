@@ -1,6 +1,13 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate untuk navigasi
 
 function LocationInfo({ locationData }) {
+  const navigate = useNavigate(); // Hook untuk navigasi
+
+  const handleNavigateToClaimLapak = () => {
+    navigate("/claimlapak"); // Mengarahkan ke halaman /claimlapak
+  };
+
   if (!locationData) {
     return <div></div>;
   }
@@ -25,7 +32,10 @@ function LocationInfo({ locationData }) {
         </div>
 
         <div className="border-t border-gray-600 pt-4">
-          <p className="text-white text-[14px] font-[400]">
+          <p
+            className="text-white text-[14px] font-[400] cursor-pointer hover:text-blue-400"
+            onClick={handleNavigateToClaimLapak}
+          >
             Apakah Anda Pemilik Lapak?
           </p>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function EditLapakForm({ lapakId }) {
+function ClaimForm() {
   const [formData, setFormData] = useState({
     namaLapak: '',
     kategoriLapak: '',
@@ -10,30 +10,6 @@ function EditLapakForm({ lapakId }) {
     selectedFile: null,
     jamBuka: {}
   });
-
-  useEffect(() => {
-    // Fetch existing lapak data from the server using the lapakId
-    const fetchLapakData = async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/api/lapak/${lapakId}`);
-        const data = await response.json();
-        setFormData({
-          namaLapak: data.nama_lapak,
-          kategoriLapak: data.kategori_lapak,
-          alamat: data.lokasi_lapak,
-          telepon: data.nomor_telepon,
-          deskripsiLapak: data.deskripsi_lapak,
-          jamBuka: data.jam_buka || {},
-          selectedFile: null,
-          previewUrl: data.foto_lapak ? `http://localhost:8080/${data.foto_lapak}` : null
-        });
-      } catch (error) {
-        console.error('Error fetching lapak data:', error);
-      }
-    };
-
-    fetchLapakData();
-  }, [lapakId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,20 +53,38 @@ function EditLapakForm({ lapakId }) {
     }));
   };
 
+  useEffect(() => {
+    const selectedLocation = JSON.parse(localStorage.getItem('selectedLocation'));
+    if (selectedLocation?.address) {
+      setFormData(prev => ({ ...prev, address: selectedLocation.address }));
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
+      // Dapatkan userId dari sesi login
+      const userResponse = await fetch('http://localhost:8080/api/user', { credentials: 'include' });
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id_pengguna;
+  
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+  
       const formDataToSend = new FormData();
-      formDataToSend.append('lapakId', lapakId);
-
+  
+      // Tambahkan userId ke dalam formData
+      formDataToSend.append('userId', userId);
+  
       // Append basic form fields
       Object.keys(formData).forEach(key => {
         if (key !== 'selectedFile' && key !== 'previewUrl' && key !== 'jamBuka') {
           formDataToSend.append(key, formData[key]);
         }
       });
-
+  
       // Append operating hours
       formDataToSend.append('jamBuka', JSON.stringify(formData.jamBuka));
       
@@ -98,25 +92,27 @@ function EditLapakForm({ lapakId }) {
       if (formData.selectedFile) {
         formDataToSend.append('foto', formData.selectedFile);
       }
-
-      const response = await fetch('http://localhost:8080/api/edit-lapak', {
-        method: 'PUT',
+  
+      const response = await fetch('http://localhost:8080/api/claim-lapak', {
+        method: 'POST',
         body: formDataToSend,
-        credentials: 'include',
+        credentials: 'include', // Sertakan cookie sesi
       });
-
+  
       const data = await response.json();
-
+  
       if (data.success) {
-        alert('Data lapak berhasil diperbarui!');
+        alert('Data lapak berhasil disimpan!');
       } else {
-        throw new Error(data.message || 'Failed to update data');
+        throw new Error(data.message || 'Failed to save data');
       }
     } catch (error) {
-      console.error('Error updating lapak:', error);
+      console.error('Error submitting form:', error);
       alert(error.message || 'Gagal mengirim data ke server');
     }
   };
+  
+  
 
   return (
     <div style={styles.formContainer}>
@@ -132,7 +128,7 @@ function EditLapakForm({ lapakId }) {
             required
           />
         </div>
-
+  
         <div style={styles.inputContainer}>
           <label style={styles.label}>Kategori Lapak</label>
           <select
@@ -144,11 +140,11 @@ function EditLapakForm({ lapakId }) {
           >
             <option value="">Pilih Kategori</option>
             <option value="warung">Warung</option>
-            <option value="kaki_lima">Kaki Lima</option>
+            <option value="kaki lima">Kaki Lima</option>
             <option value="cafe">Cafe</option>
           </select>
         </div>
-
+  
         <div style={styles.inputContainer}>
           <label style={styles.label}>Alamat</label>
           <input
@@ -160,7 +156,7 @@ function EditLapakForm({ lapakId }) {
             required
           />
         </div>
-
+  
         <div style={styles.inputContainer}>
           <label style={styles.label}>No. Telepon</label>
           <input
@@ -172,7 +168,7 @@ function EditLapakForm({ lapakId }) {
             required
           />
         </div>
-
+  
         {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((day) => (
           <div key={day} style={styles.dayRow}>
             <label style={styles.label}>{day}</label>
@@ -197,7 +193,7 @@ function EditLapakForm({ lapakId }) {
             />
           </div>
         ))}
-
+  
         <div style={styles.inputContainer}>
           <label style={styles.label}>Deskripsi lapak</label>
           <textarea
@@ -207,7 +203,7 @@ function EditLapakForm({ lapakId }) {
             style={{ ...styles.input, minHeight: '100px' }}
           />
         </div>
-
+  
         {formData.previewUrl ? (
           <img src={formData.previewUrl} alt="Preview" style={styles.image} />
         ) : (
@@ -222,78 +218,80 @@ function EditLapakForm({ lapakId }) {
           onChange={handleFileChange}
           style={styles.fileInput}
         />
-
+  
         <button type="submit" style={styles.button}>
-          Perbarui
+          Selesai
         </button>
       </form>
     </div>
   );
+  
 }
 
 const styles = {
-  formContainer: {
-    backgroundColor: '#1e1e2f', // Dark background
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-    width: '400px', // Adjust as needed
-    margin: 'auto',
-    color: '#ffffff' // White text
-  },
-  input: {
-    backgroundColor: '#2a2a4d', // Dark input background
-    border: '1px solid #4d4d6a', // Border color
-    color: '#ffffff', // Text color
-    borderRadius: '5px',
-    padding: '10px',
-    marginBottom: '15px',
-    width: '100%', // Full width
-  },
-  select: {
-    backgroundColor: '#2a2a4d',
-    border: '1px solid #4d4d6a',
-    color: '#ffffff',
-    borderRadius: '5px',
-    padding: '10px',
-    marginBottom: '15px',
-    width: '100%',
-  },
-  button: {
-    backgroundColor: '#4d88ff', // Light blue button
-    color: '#ffffff',
-    padding: '10px 15px',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    width: '100%',
-  },
-  uploadButton: {
-    backgroundColor: '#4d88ff', // Same as button
-    color: '#ffffff',
-    padding: '10px',
-    borderRadius: '5px',
-    display: 'inline-block',
-    cursor: 'pointer',
-    marginBottom: '15px',
-    textAlign: 'center',
-    width: '100%',
-  },
-  fileInput: {
-    display: 'none', // Hide the default file input
-  },
-  image: {
-    maxWidth: '100%', // Ensure the image fits within the container
-    marginBottom: '15px',
-  },
-  dayRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '15px',
-    color: '#ffffff', // Text color for the day labels
-  }
-};
+    formContainer: {
+      backgroundColor: '#1e1e2f', // Dark background
+      padding: '20px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+      width: '400px', // Adjust as needed
+      margin: 'auto',
+      color: '#ffffff' // White text
+    },
+    input: {
+      backgroundColor: '#2a2a4d', // Dark input background
+      border: '1px solid #4d4d6a', // Border color
+      color: '#ffffff', // Text color
+      borderRadius: '5px',
+      padding: '10px',
+      marginBottom: '15px',
+      width: '100%', // Full width
+    },
+    select: {
+      backgroundColor: '#2a2a4d',
+      border: '1px solid #4d4d6a',
+      color: '#ffffff',
+      borderRadius: '5px',
+      padding: '10px',
+      marginBottom: '15px',
+      width: '100%',
+    },
+    button: {
+      backgroundColor: '#4d88ff', // Light blue button
+      color: '#ffffff',
+      padding: '10px 15px',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      width: '100%',
+    },
+    uploadButton: {
+      backgroundColor: '#4d88ff', // Same as button
+      color: '#ffffff',
+      padding: '10px',
+      borderRadius: '5px',
+      display: 'inline-block',
+      cursor: 'pointer',
+      marginBottom: '15px',
+      textAlign: 'center',
+      width: '100%',
+    },
+    fileInput: {
+      display: 'none', // Hide the default file input
+    },
+    image: {
+      maxWidth: '100%', // Ensure the image fits within the container
+      marginBottom: '15px',
+    },
+    dayRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '15px',
+      color: '#ffffff', // Text color for the day labels
+    }
+  };
+  
 
-export default EditLapakForm;
+export default ClaimForm;
