@@ -5,12 +5,7 @@ function ClaimForm() {
     namaLapak: '',
     kategoriLapak: '',
     alamat: '',
-    kota: '',
-    provinsi: '',
-    kodePos: '',
     telepon: '',
-    teleponAlternatif: '',
-    address: '',
     deskripsiLapak: '',
     selectedFile: null,
     jamBuka: {}
@@ -145,7 +140,7 @@ function ClaimForm() {
           >
             <option value="">Pilih Kategori</option>
             <option value="warung">Warung</option>
-            <option value="kaki_lima">Kaki Lima</option>
+            <option value="kaki lima">Kaki Lima</option>
             <option value="cafe">Cafe</option>
           </select>
         </div>
@@ -163,42 +158,6 @@ function ClaimForm() {
         </div>
   
         <div style={styles.inputContainer}>
-          <label style={styles.label}>Kota</label>
-          <input
-            type="text"
-            name="kota"
-            value={formData.kota}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-  
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Provinsi</label>
-          <input
-            type="text"
-            name="provinsi"
-            value={formData.provinsi}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-  
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Kode Pos</label>
-          <input
-            type="text"
-            name="kodePos"
-            value={formData.kodePos}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-  
-        <div style={styles.inputContainer}>
           <label style={styles.label}>No. Telepon</label>
           <input
             type="tel"
@@ -207,17 +166,6 @@ function ClaimForm() {
             onChange={handleChange}
             style={styles.input}
             required
-          />
-        </div>
-  
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>No. Telepon Alternatif</label>
-          <input
-            type="tel"
-            name="teleponAlternatif"
-            value={formData.teleponAlternatif}
-            onChange={handleChange}
-            style={styles.input}
           />
         </div>
   
