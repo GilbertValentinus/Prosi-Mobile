@@ -116,13 +116,7 @@ function Map() {
   const [locationInfo, setLocationInfo] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedLapak, setSelectedLapak] = useState(null);
-
-  const lapakLocation = {
-    lat: -6.874743208622524,
-    lng: 107.60714037413038,
-    name: "Teman Lama",
-    address: "Jl. Bima No.60, Arjuna, Kec. Cicendo, Kota Bandung, Jawa Barat 40172"
-  };
+  const [lapaks, setLapaks] = useState([]);
 
   useEffect(() => {
     if (clickedLocation) {
@@ -133,16 +127,29 @@ function Map() {
     }
   }, [clickedLocation]);
 
-  // Handler untuk menutup panel
+  useEffect(() => {
+    axios
+      .get("/api/lapak")
+      .then((response) => {
+        console.log(response.data); // Tambahkan ini untuk memeriksa data
+        if (response.data.success) {
+          setLapaks(response.data.lapaks);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching lapak data:", error);
+      });
+  }, []);
+
   const closePanel = () => {
     setIsPanelOpen(false);
     setClickedLocation(null);
     setSelectedLapak(null);
   };
 
-  const handleLapakClick = () => {
-    setSelectedLapak(lapakLocation);
-    setIsPanelOpen(false); // Close the location info panel if open
+  const handleLapakClick = (lapak) => {
+    setSelectedLapak(lapak);
+    setIsPanelOpen(false); // Menutup panel lokasi jika dibuka
   };
 
   return (
@@ -158,6 +165,7 @@ function Map() {
         />
         <CurrentLocationMarker />
         <ClickLocationMarker setClickedLocation={setClickedLocation} />
+
         {clickedLocation && (
           <Marker
             position={[clickedLocation.lat, clickedLocation.lng]}
@@ -170,14 +178,19 @@ function Map() {
           </Marker>
         )}
 
-        <Marker
-          position={[lapakLocation.lat, lapakLocation.lng]}
-          icon={LapakIcon}
-          eventHandlers={{
-            click: handleLapakClick,
-          }}
-        >
-        </Marker>
+        {/* Marker untuk lapak */}
+        {lapaks.map((lapak) => {
+          return (
+            <Marker
+              key={lapak.id_lapak}
+              position={[lapak.latitude, lapak.longitude]}
+              icon={LapakIcon}
+              eventHandlers={{
+                click: () => handleLapakClick(lapak),
+              }}
+            ></Marker>
+          );
+        })}
       </MapContainer>
 
       {locationInfo && isPanelOpen && (
@@ -187,11 +200,9 @@ function Map() {
             fullAddress: locationInfo.fullAddress,
             distance: "N/A",
             plusCode: locationInfo.plusCode,
-            coordinates: `${
-              clickedLocation
-                ? `${clickedLocation.lat}, ${clickedLocation.lng}`
-                : "N/A"
-            }`,
+            coordinates: clickedLocation
+              ? `${clickedLocation.lat}, ${clickedLocation.lng}`
+              : "N/A",
           }}
           onClose={closePanel}
         />
@@ -199,7 +210,15 @@ function Map() {
 
       {selectedLapak && (
         <LapakInfo
-          lapak={selectedLapak}
+          lapak={{
+            name: selectedLapak.nama_lapak,
+            address: selectedLapak.lokasi_lapak,
+            situs: selectedLapak.situs,
+            foto: selectedLapak.foto_lapak,
+            ulasan: selectedLapak.ulasan,
+            jam_buka: selectedLapak.jam_buka, // Tambahkan jam_buka
+            jam_tutup: selectedLapak.jam_tutup, // Tambahkan jam_tutup
+          }}
           onClose={() => setSelectedLapak(null)}
         />
       )}
