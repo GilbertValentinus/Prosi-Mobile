@@ -1,40 +1,72 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
 
 function ReviewLapak() {
-  const reviewList = [
-    {
-      name: 'Teman Lama',
-      address: 'Jl. Bima No.60, Arjuna, Kec. Cicendo, Kota Bandung',
-      status: 'Tutup',
-      openTime: 'Buka 08.00'
-    },
-  ];
+  const [rating, setRating] = useState(0);  // Untuk menyimpan rating yang dipilih
+  const [hover, setHover] = useState(null); // Untuk efek hover di bintang
+  const [comment, setComment] = useState(""); // Untuk menyimpan komentar
+
+  const handleRating = (rate) => {
+    setRating(rate);
+  };
+
+  const handleCommentChange = (e) => {
+    setComment(e.target.value);
+  };
+
+  const submitReview = () => {
+    console.log("Rating:", rating);
+    console.log("Comment:", comment);
+    // Di sini bisa tambahkan logic untuk submit review ke backend atau simpan ke state
+  };
 
   return (
-    <div className="min-h-screen bg-[#161A32] text-white p-6">
-      <div className="flex items-center mb-8">
-        <Link to="/" className="mr-4">
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
-        <h1 className="text-[18px] font-semibold">Lapak</h1>
+    <div className="bg-[#171D34] p-4 rounded-lg text-white">
+      <h2 className="text-xl font-bold mb-2">Ulasan Lapak</h2>
+
+      {/* Bagian rating bintang */}
+      <div className="flex items-center mb-4">
+        {[...Array(5)].map((_, index) => {
+          const ratingValue = index + 1;
+          return (
+            <label key={index}>
+              <input
+                type="radio"
+                name="rating"
+                value={ratingValue}
+                onClick={() => handleRating(ratingValue)}
+                className="hidden"
+              />
+              <Star
+                size={24}
+                fill={ratingValue <= (hover || rating) ? "yellow" : "white"}
+                stroke={ratingValue <= (hover || rating) ? "yellow" : "white"}
+                onMouseEnter={() => setHover(ratingValue)}
+                onMouseLeave={() => setHover(null)}
+              />
+            </label>
+          );
+        })}
       </div>
-      
-      <div className="space-y-4">
-        {reviewList.map((reviewLapak, index) => (
-          <div key={index} className="border-b border-gray-700 pb-4">
-            <h2 className="text-[15px] font-semibold mb-1">{reviewLapak.name}</h2>
-            <p className="text-[13px] text-gray-400 mb-1">{reviewLapak.address}</p>
-            <p className="text-[13px]">
-              <span className="text-red-500">{reviewLapak.status}</span>
-              <span className="text-white"> - {reviewLapak.openTime}</span>
-            </p>
-          </div>
-        ))}
+
+      {/* Bagian untuk menambahkan komentar */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Tambahkan Komentar"
+          value={comment}
+          onChange={handleCommentChange}
+          className="w-full bg-[#4C516D] text-white placeholder-gray-400 py-2 px-4 rounded-lg focus:outline-none"
+        />
       </div>
+
+      <button
+        onClick={submitReview}
+        className="bg-blue-500 px-4 py-2 rounded-lg text-white font-bold"
+      >
+        Submit Ulasan
+      </button>
     </div>
   );
-};
+}
 
 export default ReviewLapak;

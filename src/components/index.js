@@ -13,4 +13,6 @@ export { default as ClaimForm6 } from "./claimlapak6-form";
 export { default as FavoriteList } from "./favorite-list";
 export { default as LapakList } from "./lapak-list";
 export { default as ReviewLapak } from "./review-lapak";
+export { default as LaporLapak } from "./lapor-lapak";
+export { default as ProfileUser } from "./profile-user";
 
