@@ -50,6 +50,9 @@ function DraggableLocationInfo({ locationData, onClose }) {
   const dragStartY = useRef(0);
   const positionStart = useRef(0);
 
+  // Set a maximum upward drag value (e.g., -200 pixels)
+  const MAX_DRAG_UP = -100;
+
   const handleMouseDown = (e) => {
     setIsDragging(true);
     dragStartY.current = e.clientY;
@@ -59,7 +62,8 @@ function DraggableLocationInfo({ locationData, onClose }) {
   const handleMouseMove = (e) => {
     if (!isDragging) return;
     const delta = e.clientY - dragStartY.current;
-    setPosition(Math.min(0, positionStart.current + delta));
+    const newPosition = Math.min(0, positionStart.current + delta); // Limit to dragging up only
+    setPosition(Math.max(newPosition, MAX_DRAG_UP)); // Prevent dragging beyond the maximum limit
   };
 
   const handleMouseUp = () => {
@@ -75,7 +79,8 @@ function DraggableLocationInfo({ locationData, onClose }) {
   const handleTouchMove = (e) => {
     if (!isDragging) return;
     const delta = e.touches[0].clientY - dragStartY.current;
-    setPosition(Math.min(0, positionStart.current + delta));
+    const newPosition = Math.min(0, positionStart.current + delta);
+    setPosition(Math.max(newPosition, MAX_DRAG_UP));
   };
 
   const handleTouchEnd = () => {
