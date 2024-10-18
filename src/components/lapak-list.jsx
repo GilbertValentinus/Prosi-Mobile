@@ -1,16 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 function LapakList() {
-  const listLapak = [
-    {
-      name: 'Teman Lama',
-      address: 'Jl. Bima No.60, Arjuna, Kec. Cicendo, Kota Bandung',
-      status: 'Tutup',
-      openTime: 'Buka 08.00'
-    },
-  ];
+  const [lapaks, setLapaks] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Fetch lapak summary (name and address) for the logged-in user
+  useEffect(() => {
+    const fetchLapakSummary = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/lapak-summary', {
+          credentials: 'include', // Include session cookies
+        });
+        const data = await response.json();
+        if (data.success) {
+          setLapaks(data.lapaks); // Update state with lapak data
+        } else {
+          setError(data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching lapak summary:', error);
+        setError('Failed to fetch lapaks');
+      }
+    };
+
+    fetchLapakSummary();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#161A32] text-white p-6">
@@ -22,16 +38,16 @@ function LapakList() {
       </div>
       
       <div className="space-y-4">
-        {listLapak.map((lapak, index) => (
-          <div key={index} className="border-b border-gray-700 pb-4">
-            <h2 className="text-[15px] font-semibold mb-1">{lapak.name}</h2>
-            <p className="text-[13px] text-gray-400 mb-1">{lapak.address}</p>
-            <p className="text-[13px]">
-              <span className="text-red-500">{lapak.status}</span>
-              <span className="text-white"> - {lapak.openTime}</span>
-            </p>
-          </div>
-        ))}
+        {error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          lapaks.map((lapak, index) => (
+            <div key={index} className="border-b border-gray-700 pb-4">
+              <h2 className="text-[15px] font-semibold mb-1">{lapak.name}</h2>
+              <p className="text-[13px] text-gray-400">{lapak.address}</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

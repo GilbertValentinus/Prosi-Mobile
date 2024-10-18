@@ -215,7 +215,7 @@
         }
       );
     });
-      
+
 
     app.get('/api/lapak', (req, res) => {
       const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
@@ -287,6 +287,38 @@
         res.json({ success: true, lapaks });
       });
     });
+    
+    app.get('/api/lapak-summary', (req, res) => {
+      // Ensure the user is logged in
+      if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'User not logged in' });
+      }
+    
+      const userId = req.session.userId; // Get the logged-in user ID from session
+    
+      const query = `
+        SELECT nama_lapak, lokasi_lapak 
+        FROM lapak
+        WHERE id_pengguna = ? AND status_lapak = 'terverifikasi'
+      `;
+    
+      pool.query(query, [userId], (err, results) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ success: false, message: 'Database error' });
+        }
+    
+        // Send only the name and address of each lapak
+        const lapaks = results.map(row => ({
+          name: row.nama_lapak,
+          address: row.lokasi_lapak
+        }));
+    
+        res.json({ success: true, lapaks });
+      });
+    });
+    
+    
 
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
