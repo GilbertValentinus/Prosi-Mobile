@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Camera } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const ClientHelpCenter = () => {
   const [messages, setMessages] = useState([]);
@@ -8,9 +9,10 @@ const ClientHelpCenter = () => {
   const [ticket, setTicket] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchOrCreateTicket();
+    fetchTicket();
   }, []);
 
   useEffect(() => {
@@ -23,19 +25,17 @@ const ClientHelpCenter = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchOrCreateTicket = async () => {
+  const fetchTicket = async () => {
     try {
       const response = await axios.get('/api/user-ticket');
       if (response.data.ticket) {
         setTicket(response.data.ticket);
       } else {
-        const newTicketResponse = await axios.post('/api/create-ticket', {
-          subject: 'General Inquiry'
-        });
-        setTicket(newTicketResponse.data.ticket);
+        // If no open ticket, redirect to topic selection
+        navigate('/Pilihsubject');
       }
     } catch (error) {
-      console.error('Error fetching or creating ticket:', error);
+      console.error('Error fetching ticket:', error);
     }
   };
 
@@ -50,17 +50,30 @@ const ClientHelpCenter = () => {
 
   const handleSendMessage = async () => {
     if (inputMessage.trim() !== '' && ticket) {
-      try {
-        await axios.post('/api/send-message', {
-          ticketId: ticket.ticket_id,
-          text: inputMessage,
-          senderType: 'user'
-        });
-        setInputMessage('');
-        fetchMessages();
-      } catch (error) {
-        console.error('Error sending message:', error);
+      if (inputMessage.trim().toLowerCase() === '/end') {
+        await endChat();
+      } else {
+        try {
+          await axios.post('/api/send-message', {
+            ticketId: ticket.ticket_id,
+            text: inputMessage,
+            senderType: 'user'
+          });
+          setInputMessage('');
+          fetchMessages();
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
       }
+    }
+  };
+
+  const endChat = async () => {
+    try {
+      await axios.post(`/api/end-chat/${ticket.ticket_id}`);
+      navigate('/Pilihsubject');
+    } catch (error) {
+      console.error('Error ending chat:', error);
     }
   };
 
@@ -88,7 +101,7 @@ const ClientHelpCenter = () => {
   return (
     <div className="flex flex-col h-screen bg-[#171D34]">
       <div className="flex items-center p-4 bg-[#222745] text-white">
-        <ArrowLeft className="mr-4" onClick={() => {/* Handle navigation back */}} />
+        <ArrowLeft className="mr-4" onClick={() => navigate('/Pilihsubject')} />
         <h1 className="text-xl font-semibold">Pusat Bantuan</h1>
       </div>
 
@@ -127,7 +140,7 @@ const ClientHelpCenter = () => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Ketik pesan..."
+            placeholder="Ketik pesan... ( /end untuk menyelesaikan chat)"
             className="flex-1 p-3 bg-transparent text-white focus:outline-none"
           />
           <button onClick={() => fileInputRef.current.click()} className="p-3 text-white">

@@ -96,7 +96,7 @@ function Searchbar() {
           </Link>
 
           <Link
-            to="/bantuan"
+            to="/Pilihsubject"
             className="max-w-[150px] h-[30px] text-white text-[16px] font-[600] px-4 rounded-[40px] text-center border-white border-[1px]"
             onClick={toggleSidebar}
           >

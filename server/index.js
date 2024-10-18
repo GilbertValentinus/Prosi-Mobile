@@ -197,7 +197,7 @@ app.post('/api/create-ticket', (req, res) => {
   const userId = req.session.userId; // Assuming you have user sessions
   const { subject } = req.body;
   pool.query(
-    'INSERT INTO support_tickets (user_id, subject, status, created_at) VALUES (?, ?, "open", NOW())',
+    'INSERT INTO support_tickets (user_id, subject, status, created_at, updated_at) VALUES (?, ?, "open", NOW(), NOW())',
     [userId, subject],
     (error, result) => {
       if (error) {
@@ -231,30 +231,6 @@ app.get('/api/messages/:ticketId', (req, res) => {
   );
 });
 
-// In your Express server file (e.g., index.js)
-
-app.get('/api/image/:messageId', (req, res) => {
-  const { messageId } = req.params;
-  pool.query(
-    'SELECT file_path, file_type FROM attachments WHERE message_id = ?',
-    [messageId],
-    (error, results) => {
-      if (error) {
-        console.error('Error fetching image:', error);
-        res.status(500).send('Error fetching image');
-        return;
-      }
-      if (results.length === 0) {
-        res.status(404).send('Image not found');
-        return;
-      }
-      const { file_path, file_type } = results[0];
-      res.contentType(file_type);
-      res.send(file_path);
-    }
-  );
-});
-
 // Send a new message
 app.post('/api/send-message', (req, res) => {
   const { ticketId, text, senderType } = req.body;
@@ -270,6 +246,23 @@ app.post('/api/send-message', (req, res) => {
         return;
       }
       res.json({ message: 'Message sent successfully' });
+    }
+  );
+});
+
+// End chat (close ticket)
+app.post('/api/end-chat/:ticketId', (req, res) => {
+  const { ticketId } = req.params;
+  pool.query(
+    'UPDATE support_tickets SET status = "closed", updated_at = NOW() WHERE ticket_id = ?',
+    [ticketId],
+    (error) => {
+      if (error) {
+        console.error('Error closing ticket:', error);
+        res.status(500).json({ error: 'Database error' });
+        return;
+      }
+      res.json({ message: 'Chat ended successfully' });
     }
   );
 });
@@ -306,3 +299,27 @@ app.post('/api/send-photo', upload.single('photo'), (req, res) => {
     }
   );
 });
+
+// Serve image
+app.get('/api/image/:messageId', (req, res) => {
+  const { messageId } = req.params;
+  pool.query(
+    'SELECT file_path, file_type FROM attachments WHERE message_id = ?',
+    [messageId],
+    (error, results) => {
+      if (error) {
+        console.error('Error fetching image:', error);
+        res.status(500).send('Error fetching image');
+        return;
+      }
+      if (results.length === 0) {
+        res.status(404).send('Image not found');
+        return;
+      }
+      const { file_path, file_type } = results[0];
+      res.contentType(file_type);
+      res.send(file_path);
+    }
+  );
+});
+      
