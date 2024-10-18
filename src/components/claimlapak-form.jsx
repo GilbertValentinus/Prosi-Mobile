@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
-function ClaimForm() {
+function ClaimLapak() {
   const [formData, setFormData] = useState({
     namaLapak: '',
     kategoriLapak: '',
     alamat: '',
+    latitude: '', // Tambahkan latitude
+    longitude: '', // Tambahkan longitude
     telepon: '',
     deskripsiLapak: '',
+    situs: '',
+    layanan: '',
     selectedFile: null,
     jamBuka: {}
   });
@@ -16,10 +20,22 @@ function ClaimForm() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  useEffect(() => {
+    const selectedLocation = JSON.parse(localStorage.getItem('selectedLocation'));
+    if (selectedLocation?.address) {
+      setFormData(prev => ({
+        ...prev,
+        alamat: selectedLocation.address,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude
+      }));
+    }
+  }, []);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       selectedFile: file,
       previewUrl: URL.createObjectURL(file)
     }));
@@ -53,18 +69,10 @@ function ClaimForm() {
     }));
   };
 
-  useEffect(() => {
-    const selectedLocation = JSON.parse(localStorage.getItem('selectedLocation'));
-    if (selectedLocation?.address) {
-      setFormData(prev => ({ ...prev, address: selectedLocation.address }));
-    }
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+  
     try {
-      // Dapatkan userId dari sesi login
       const userResponse = await fetch('http://localhost:8080/api/user', { credentials: 'include' });
       const userData = await userResponse.json();
       const userId = userData?.user?.id_pengguna;
@@ -75,20 +83,23 @@ function ClaimForm() {
   
       const formDataToSend = new FormData();
   
-      // Tambahkan userId ke dalam formData
       formDataToSend.append('userId', userId);
   
-      // Append basic form fields
       Object.keys(formData).forEach(key => {
         if (key !== 'selectedFile' && key !== 'previewUrl' && key !== 'jamBuka') {
           formDataToSend.append(key, formData[key]);
         }
       });
   
-      // Append operating hours
-      formDataToSend.append('jamBuka', JSON.stringify(formData.jamBuka));
-      
-      // Append file if exists
+      // Convert jamBuka to an array of objects for each day
+      const jamBukaArray = Object.keys(formData.jamBuka).map(day => ({
+        hari: day,
+        buka: formData.jamBuka[day].buka,
+        jamBuka: formData.jamBuka[day].jamBuka,
+        jamTutup: formData.jamBuka[day].jamTutup
+      }));
+      formDataToSend.append('jamBuka', JSON.stringify(jamBukaArray));
+  
       if (formData.selectedFile) {
         formDataToSend.append('foto', formData.selectedFile);
       }
@@ -96,7 +107,7 @@ function ClaimForm() {
       const response = await fetch('http://localhost:8080/api/claim-lapak', {
         method: 'POST',
         body: formDataToSend,
-        credentials: 'include', // Sertakan cookie sesi
+        credentials: 'include',
       });
   
       const data = await response.json();
@@ -111,7 +122,6 @@ function ClaimForm() {
       alert(error.message || 'Gagal mengirim data ke server');
     }
   };
-  
   
 
   return (
@@ -128,7 +138,7 @@ function ClaimForm() {
             required
           />
         </div>
-  
+
         <div style={styles.inputContainer}>
           <label style={styles.label}>Kategori Lapak</label>
           <select
@@ -144,7 +154,7 @@ function ClaimForm() {
             <option value="cafe">Cafe</option>
           </select>
         </div>
-  
+
         <div style={styles.inputContainer}>
           <label style={styles.label}>Alamat</label>
           <input
@@ -156,7 +166,31 @@ function ClaimForm() {
             required
           />
         </div>
-  
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Latitude</label>
+          <input
+            type="text"
+            name="latitude"
+            value={formData.latitude}
+            onChange={handleChange}
+            style={styles.input}
+            readOnly
+          />
+        </div>
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Longitude</label>
+          <input
+            type="text"
+            name="longitude"
+            value={formData.longitude}
+            onChange={handleChange}
+            style={styles.input}
+            readOnly
+          />
+        </div>
+
         <div style={styles.inputContainer}>
           <label style={styles.label}>No. Telepon</label>
           <input
@@ -168,7 +202,7 @@ function ClaimForm() {
             required
           />
         </div>
-  
+
         {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((day) => (
           <div key={day} style={styles.dayRow}>
             <label style={styles.label}>{day}</label>
@@ -193,7 +227,7 @@ function ClaimForm() {
             />
           </div>
         ))}
-  
+
         <div style={styles.inputContainer}>
           <label style={styles.label}>Deskripsi lapak</label>
           <textarea
@@ -203,7 +237,29 @@ function ClaimForm() {
             style={{ ...styles.input, minHeight: '100px' }}
           />
         </div>
-  
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Situs</label>
+          <input
+            type="text"
+            name="situs"
+            value={formData.situs}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Layanan</label>
+          <input
+            type="text"
+            name="layanan"
+            value={formData.layanan}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
+
         {formData.previewUrl ? (
           <img src={formData.previewUrl} alt="Preview" style={styles.image} />
         ) : (
@@ -218,80 +274,83 @@ function ClaimForm() {
           onChange={handleFileChange}
           style={styles.fileInput}
         />
-  
+
         <button type="submit" style={styles.button}>
           Selesai
         </button>
       </form>
     </div>
   );
-  
 }
 
 const styles = {
-    formContainer: {
-      backgroundColor: '#1e1e2f', // Dark background
-      padding: '20px',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-      width: '400px', // Adjust as needed
-      margin: 'auto',
-      color: '#ffffff' // White text
-    },
-    input: {
-      backgroundColor: '#2a2a4d', // Dark input background
-      border: '1px solid #4d4d6a', // Border color
-      color: '#ffffff', // Text color
-      borderRadius: '5px',
-      padding: '10px',
-      marginBottom: '15px',
-      width: '100%', // Full width
-    },
-    select: {
-      backgroundColor: '#2a2a4d',
-      border: '1px solid #4d4d6a',
-      color: '#ffffff',
-      borderRadius: '5px',
-      padding: '10px',
-      marginBottom: '15px',
-      width: '100%',
-    },
-    button: {
-      backgroundColor: '#4d88ff', // Light blue button
-      color: '#ffffff',
-      padding: '10px 15px',
-      border: 'none',
-      borderRadius: '5px',
-      cursor: 'pointer',
-      fontSize: '16px',
-      width: '100%',
-    },
-    uploadButton: {
-      backgroundColor: '#4d88ff', // Same as button
-      color: '#ffffff',
-      padding: '10px',
-      borderRadius: '5px',
-      display: 'inline-block',
-      cursor: 'pointer',
-      marginBottom: '15px',
-      textAlign: 'center',
-      width: '100%',
-    },
-    fileInput: {
-      display: 'none', // Hide the default file input
-    },
-    image: {
-      maxWidth: '100%', // Ensure the image fits within the container
-      marginBottom: '15px',
-    },
-    dayRow: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: '15px',
-      color: '#ffffff', // Text color for the day labels
-    }
-  };
-  
+  formContainer: {
+    backgroundColor: '#1e1e2f',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+    width: '400px',
+    margin: 'auto',
+    color: '#ffffff'
+  },
+  input: {
+    backgroundColor: '#2a2a4d',
+    border: '1px solid #4d4d6a',
+    color: '#ffffff',
+    borderRadius: '5px',
+    padding: '10px',
+    marginBottom: '15px',
+    width: '100%',
+  },
+  select: {
+    backgroundColor: '#2a2a4d',
+    border: '1px solid #4d4d6a',
+    color: '#ffffff',
+    borderRadius: '5px',
+    padding: '10px',
+    marginBottom: '15px',
+    width: '100%',
+  },
+  label: {
+    marginBottom: '5px',
+    fontWeight: 'bold',
+  },
+  inputContainer: {
+    marginBottom: '20px',
+  },
+  dayRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  image: {
+    width: '100%',
+    height: 'auto',
+    marginBottom: '15px',
+    borderRadius: '8px',
+  },
+  uploadButton: {
+    backgroundColor: '#2a2a4d',
+    padding: '10px',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    marginBottom: '15px',
+    display: 'block',
+    width: '100%',
+  },
+  fileInput: {
+    display: 'none',
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    width: '100%',
+  },
+};
 
-export default ClaimForm;
+export default ClaimLapak;

@@ -118,14 +118,25 @@ function Map() {
   const [selectedLapak, setSelectedLapak] = useState(null);
   const [lapaks, setLapaks] = useState([]);
 
-  useEffect(() => {
-    if (clickedLocation) {
-      fetchAddress(clickedLocation.lat, clickedLocation.lng).then((info) => {
-        setLocationInfo(info);
-        setIsPanelOpen(true);
-      });
-    }
-  }, [clickedLocation]);
+// Map.jsx
+useEffect(() => {
+  if (clickedLocation) {
+    fetchAddress(clickedLocation.lat, clickedLocation.lng).then((info) => {
+      setLocationInfo(info);
+      setIsPanelOpen(true);
+      localStorage.setItem(
+        'selectedLocation',
+        JSON.stringify({
+          address: info.fullAddress,
+          latitude: clickedLocation.lat, // simpan latitude
+          longitude: clickedLocation.lng // simpan longitude
+        })
+      );
+    });
+  }
+}, [clickedLocation]);
+
+
 
   useEffect(() => {
     axios
@@ -259,7 +270,7 @@ export default Map;
 //       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 //     />
 //     <Marker position={position}>
-//       <Popup>
+//       <Popup>  
 //         You are here.
 //       </Popup>
 //     </Marker>
