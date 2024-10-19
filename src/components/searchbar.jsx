@@ -4,7 +4,7 @@ import { searchbarImages } from "../assets";
 
 const { hamburgerIcon } = searchbarImages;
 
-function Searchbar() {
+function Searchbar({ onSelectLocation }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -41,9 +41,16 @@ function Searchbar() {
     }
   };
 
+  const handleSelectResult = (result) => {
+    if (result.latitude && result.longitude) {
+      onSelectLocation(parseFloat(result.latitude), parseFloat(result.longitude), result);
+    }
+    setSearchQuery(result.nama_lapak);
+    setSearchResults([]);
+  };
+
   return (
-    <div className="relative" style={{ zIndex: 1000 }}>
-      {/* Searchbar */}
+    <div className="absolute top-0 left-0 right-0 z-[1001]">
       <div className="flex bg-[#171D34] h-[50px] justify-between gap-8 px-4">
         <img
           src={hamburgerIcon}
@@ -60,11 +67,14 @@ function Searchbar() {
         />
       </div>
 
-      {/* Search Results */}
       {searchResults.length > 0 && (
         <div className="absolute w-full bg-[#222745] mt-1 rounded-b-[8px] max-h-[300px] overflow-y-auto">
           {searchResults.map((result) => (
-            <div key={result.id_lapak} className="p-2 hover:bg-[#2c3252] cursor-pointer">
+            <div 
+              key={result.id_lapak} 
+              className="p-2 hover:bg-[#2c3252] cursor-pointer"
+              onClick={() => handleSelectResult(result)}
+            >
               <h3 className="text-white font-semibold">{result.nama_lapak}</h3>
               <p className="text-gray-300 text-sm">{result.lokasi_lapak}</p>
             </div>
@@ -72,7 +82,6 @@ function Searchbar() {
         </div>
       )}
 
-      {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black opacity-50"
@@ -80,7 +89,6 @@ function Searchbar() {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-[#161A32] w-[55%] z-50 transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
