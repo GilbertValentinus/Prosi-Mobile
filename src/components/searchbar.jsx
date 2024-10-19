@@ -1,19 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { searchbarImages } from "../assets";
 
 const { hamburgerIcon } = searchbarImages;
 
-function Searchbar() {
+function Searchbar({ onSelectLocation }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery) {
+        fetchSearchResults();
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const fetchSearchResults = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/search?query=${encodeURIComponent(searchQuery)}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSearchResults(data.results);
+      } else {
+        console.error('Search failed:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching search results:', error);
+    }
+  };
+
+  const handleSelectResult = (result) => {
+    if (result.latitude && result.longitude) {
+      onSelectLocation(parseFloat(result.latitude), parseFloat(result.longitude), result);
+    }
+    setSearchQuery(result.nama_lapak);
+    setSearchResults([]);
+  };
+
   return (
-    <div className="relative" style={{ zIndex: 1000 }}>
-      {/* Searchbar */}
+    <div className="absolute top-0 left-0 right-0 z-[1001]">
       <div className="flex bg-[#171D34] h-[50px] justify-between gap-8 px-4">
         <img
           src={hamburgerIcon}
@@ -24,10 +61,27 @@ function Searchbar() {
         <input
           type="text"
           className="bg-[#222745] text-white flex-1 px-4 py-2 rounded-[8px] w-full h-[35px] my-auto"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search for places..."
         />
       </div>
 
-      {/* Sidebar Overlay */}
+      {searchResults.length > 0 && (
+        <div className="absolute w-full bg-[#222745] mt-1 rounded-b-[8px] max-h-[300px] overflow-y-auto">
+          {searchResults.map((result) => (
+            <div 
+              key={result.id_lapak} 
+              className="p-2 hover:bg-[#2c3252] cursor-pointer"
+              onClick={() => handleSelectResult(result)}
+            >
+              <h3 className="text-white font-semibold">{result.nama_lapak}</h3>
+              <p className="text-gray-300 text-sm">{result.lokasi_lapak}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black opacity-50"
@@ -35,7 +89,6 @@ function Searchbar() {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-[#161A32] w-[55%] z-50 transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -51,7 +104,7 @@ function Searchbar() {
           </Link>
 
           <Link
-            to="/bantuan"
+            to="/Pilihsubject"
             className="max-w-[150px] h-[30px] text-white text-[16px] font-[600] px-4 rounded-[40px] text-center border-white border-[1px]"
             onClick={toggleSidebar}
           >
