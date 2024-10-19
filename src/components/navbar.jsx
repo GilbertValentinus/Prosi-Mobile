@@ -14,7 +14,7 @@ function Navbar() {
         width: "100%",
         backgroundColor: "#171D34",
         color: "#fff",
-        zIndex: 1000,
+        zIndex: 999,
       }}
     >
       <div className="flex justify-evenly p-4 text-white">

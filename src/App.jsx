@@ -9,6 +9,8 @@ import KlaimLapak3 from "./pages/claimlapak3";
 import KlaimLapak4 from "./pages/claimlapak4";
 import KlaimLapak5 from "./pages/claimlapak5";
 import KlaimLapak6 from "./pages/claimlapak6";
+import KlaimLapak from "./pages/claimlapak";
+import EditLapak from "./pages/editlapak";
 import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
 import Bantuan  from "./pages/bantuan";
@@ -32,6 +34,8 @@ function App() {
         <Route path="/lapak" element={<Lapak /> } />
         <Route path="/bantuan" element={<Bantuan /> } />
         <Route path="/Pilihsubject" element={<Pilihsubject /> } />
+        <Route path="/claimlapak" element={<KlaimLapak /> } />
+        <Route path="/editlapak" element={<EditLapak /> } />
       </Routes>
     </Router>
   )
