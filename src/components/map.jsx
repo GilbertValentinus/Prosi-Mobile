@@ -178,12 +178,13 @@ function Map() {
     setIsPanelOpen(false);
   };
   
-  const handleSelectLocation = (lat, lng, lapakInfo) => {
+  const handleSelectLocation = (lat, lng, lapakInfo,lapak) => {
     setMapCenter([lat, lng]);
-    setMapZoom(17);
-    if (lapakInfo) {
-      setSelectedLapak(lapakInfo);
-    }
+    setMapZoom(200);
+    handleLapakClick(lapak)
+    // if (lapakInfo) {
+    //   setSelectedLapak(lapakInfo);
+    // }
   };
 
 
