@@ -180,7 +180,7 @@ app.get('/api/test-db', (req, res) => {
 
   app.get('/api/lapak', (req, res) => {
     const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
-    
+  
     const query = `
       SELECT 
         l.id_lapak, 
@@ -200,18 +200,18 @@ app.get('/api/test-db', (req, res) => {
         p.nama_lengkap AS nama_pengguna
       FROM lapak l
       LEFT JOIN buka b ON l.id_lapak = b.id_lapak
-      LEFT JOIN hari h ON b.id_hari = h.id_hari
+      LEFT JOIN hari h ON b.id_hari = h.id_hari AND h.id_hari = ? -- Kondisi h.id_hari dipindah ke sini
       LEFT JOIN ulasan u ON l.id_lapak = u.id_lapak
       LEFT JOIN pengguna p ON u.id_pengguna = p.id_pengguna
-      WHERE l.status_lapak = 'terverifikasi' AND h.id_hari = ?
+      WHERE l.status_lapak = 'terverifikasi'
     `;
-    
+  
     pool.query(query, [currentDay], (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ success: false, message: 'Database error' });
       }
-    
+  
       const lapaks = results.reduce((acc, row) => {
         const lapak = acc.find(l => l.id_lapak === row.id_lapak);
         const review = {
@@ -222,10 +222,10 @@ app.get('/api/test-db', (req, res) => {
           ulasan_foto: row.ulasan_foto,
           nama_pengguna: row.nama_pengguna,
         };
-    
+  
         // Convert foto_lapak (BLOB) to base64 if it exists
         const foto_lapak_base64 = row.foto_lapak ? Buffer.from(row.foto_lapak).toString('base64') : null;
-    
+  
         if (lapak) {
           lapak.ulasan.push(review);
         } else {
@@ -244,10 +244,17 @@ app.get('/api/test-db', (req, res) => {
         }
         return acc;
       }, []);
-    
+  
+      // Jika tidak ada lapak yang buka pada hari ini
+      if (lapaks.length === 0) {
+        return res.json({ success: true, lapaks: [], message: 'Tidak ada lapak yang buka hari ini' });
+      }
+  
       res.json({ success: true, lapaks });
     });
   });
+  
+  
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
