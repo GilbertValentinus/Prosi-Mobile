@@ -13,6 +13,9 @@ import KlaimLapak from "./pages/claimlapak";
 import EditLapak from "./pages/editlapak";
 import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
+import Bantuan  from "./pages/bantuan";
+import Pilihsubject  from "./pages/pilihsubject";
+
 
 function App() {
   return (
@@ -29,6 +32,8 @@ function App() {
         <Route path="/claimlapak6" element={<KlaimLapak6 /> } />
         <Route path="/favorit" element={<Favorit /> } />
         <Route path="/lapak" element={<Lapak /> } />
+        <Route path="/bantuan" element={<Bantuan /> } />
+        <Route path="/Pilihsubject" element={<Pilihsubject /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
         <Route path="/editlapak" element={<EditLapak /> } />
       </Routes>

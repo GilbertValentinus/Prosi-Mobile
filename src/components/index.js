@@ -14,4 +14,4 @@ export { default as ClaimForm } from "./claimlapak-form";
 export { default as EditLapakForm } from "./editlapak-form";
 export { default as FavoriteList } from "./favorite-list";
 export { default as LapakList } from "./lapak-list";
-
+export { default as PusatBantuan } from "./pusatbantuan";
