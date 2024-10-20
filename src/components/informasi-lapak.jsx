@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
 import { Star } from "lucide-react";
@@ -22,16 +22,15 @@ const StarRating = ({ rating }) => {
 };
 
 const LapakInfo = ({ lapak, onClose }) => {
-  const panelRef = useRef(null);
+  const panelRef = React.useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [statusLapak, setStatusLapak] = useState("");
+  const navigate = useNavigate();
 
   const updateStatus = () => {
     if (lapak.jam_buka && lapak.jam_tutup) {
       const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
-
-      // Convert opening and closing times to minutes
+      const currentTime = now.getHours() * 60 + now.getMinutes();
       const [openHour, openMinute] = lapak.jam_buka.split(":").map(Number);
       const [closeHour, closeMinute] = lapak.jam_tutup.split(":").map(Number);
       const openTime = openHour * 60 + openMinute;
@@ -48,32 +47,28 @@ const LapakInfo = ({ lapak, onClose }) => {
   };
 
   useEffect(() => {
-    updateStatus(); // Initial update
-    const interval = setInterval(updateStatus, 60000); // Update every minute
-
-    return () => clearInterval(interval); // Clean up on component unmount
+    updateStatus();
+    const interval = setInterval(updateStatus, 60000);
+    return () => clearInterval(interval);
   }, [lapak]);
 
-  // Cek apakah perangkat adalah mobile
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768); // Perangkat mobile jika lebar layar <= 768px
+      setIsMobile(window.innerWidth <= 768);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Menghitung rata-rata rating dan total ulasan
-  const totalUlasan = lapak.ulasan.length;
-  const totalRating = lapak.ulasan.reduce(
-    (sum, review) => sum + review.rating,
-    0
-  );
-  const rataRating =
-    totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
+  // Menghilangkan duplikasi ulasan
+  const uniqueReviews = Array.from(new Set(lapak.ulasan.map(review => review.id_ulasan)))
+    .map(id => lapak.ulasan.find(review => review.id_ulasan === id));
 
-    const navigate = useNavigate();
+  // Menghitung rata-rata rating dan total ulasan
+  const totalUlasan = uniqueReviews.length;
+  const totalRating = uniqueReviews.reduce((sum, review) => sum + review.rating, 0);
+  const rataRating = totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
 
   return (
     <motion.div
@@ -81,15 +76,15 @@ const LapakInfo = ({ lapak, onClose }) => {
       initial={{ y: "100%" }}
       animate={{ y: "0%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      drag={isMobile ? false : "y"} // Nonaktifkan drag di mobile
+      drag={isMobile ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={0.2}
-      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white px-4 rounded-t-[15px] shadow-lg no-scrollbar "
+      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white px-4 rounded-t-[15px] shadow-lg no-scrollbar"
       style={{ zIndex: 1000, maxHeight: "80vh", overflowY: "auto" }}
     >
       {/* Sticky Header */}
       <div className="sticky top-0 bg-[#222745] py-4 z-10 w-full">
-        <div className="flex justify-between items-center ">
+        <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">{lapak.name}</h2>
           <button onClick={onClose} className="text-white">
             ×
@@ -185,8 +180,8 @@ const LapakInfo = ({ lapak, onClose }) => {
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
       <div>
         <h2 className="text-xl font-bold mb-2">Ulasan</h2>
-        {lapak.ulasan.length > 0 ? (
-          lapak.ulasan.map((review) => (
+        {uniqueReviews.length > 0 ? (
+          uniqueReviews.map((review) => (
             <div key={review.id_ulasan} className="my-4 space-y-1">
               <div className="flex gap-2">
                 <img
