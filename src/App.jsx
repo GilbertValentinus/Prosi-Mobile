@@ -15,7 +15,9 @@ import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
 import Bantuan  from "./pages/bantuan";
 import Pilihsubject  from "./pages/pilihsubject";
-
+import Review from "./pages/reviewLapak";
+import Lapor from "./pages/laporLapak";
+import Profile from "./pages/profileUser";
 
 function App() {
   return (
@@ -36,7 +38,9 @@ function App() {
         <Route path="/Pilihsubject" element={<Pilihsubject /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
         <Route path="/editlapak" element={<EditLapak /> } />
-      </Routes>
+        <Route path="/reviewLapak" element={<Review /> } />
+        <Route path="/laporLapak" element={<Lapor /> } />
+        <Route path="/profileUser" element={<Profile /> } />
     </Router>
   )
 }

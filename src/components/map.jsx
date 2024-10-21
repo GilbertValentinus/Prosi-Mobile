@@ -15,6 +15,9 @@ import Searchbar from "./searchbar";
 
 import DraggableLocationInfo from "./location-info";
 import { mapImages } from "../assets";
+import { useNavigate } from "react-router-dom";
+import { lapakImages } from "../assets"; // Import gambar
+const { profile } = lapakImages; // Ambil ikon profile
 
 const { clickLocationIcon, currentLocationIcon, shopIcon } = mapImages;
 
@@ -51,11 +54,9 @@ const fetchAddress = async (lat, lng) => {
     if (response.data) {
       return {
         name: response.data.address.road || "Unknown Road",
-        fullAddress: `${response.data.address.road || ""}, ${
-          response.data.address.suburb || ""
-        }, ${response.data.address.city || ""}, ${
-          response.data.address.state || ""
-        }, ${response.data.address.country || ""}`,
+        fullAddress: `${response.data.address.road || ""}, ${response.data.address.suburb || ""
+          }, ${response.data.address.city || ""}, ${response.data.address.state || ""
+          }, ${response.data.address.country || ""}`,
         plusCode: "N/A",
       };
     }
@@ -187,6 +188,12 @@ function Map() {
     // }
   };
 
+  const navigate = useNavigate();
+
+  // Fungsi untuk handle ketika tombol profile diklik
+  const goToProfile = () => {
+    navigate("/profileUser");
+  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -230,6 +237,14 @@ function Map() {
           </Marker>
         ))}
       </MapContainer>
+      {/* Ikon Profile di pojok kanan atas */}
+      <div
+        className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg cursor-pointer"
+        onClick={goToProfile}
+      >
+        <img src={profile} className="w-7 h-7 rounded-full" alt="Profile" />
+      </div>
+
 
       {locationInfo && isPanelOpen && (
         <DraggableLocationInfo

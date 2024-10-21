@@ -4,6 +4,7 @@ import { lapakImages } from "../assets";
 import { Star } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
+
 const { lapak1, lapak2, ig, profile } = lapakImages;
 
 const StarRating = ({ rating }) => {
@@ -61,6 +62,7 @@ const LapakInfo = ({ lapak, onClose }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+
   // Menghilangkan duplikasi ulasan
   const uniqueReviews = Array.from(new Set(lapak.ulasan.map(review => review.id_ulasan)))
     .map(id => lapak.ulasan.find(review => review.id_ulasan === id));
@@ -69,6 +71,11 @@ const LapakInfo = ({ lapak, onClose }) => {
   const totalUlasan = uniqueReviews.length;
   const totalRating = uniqueReviews.reduce((sum, review) => sum + review.rating, 0);
   const rataRating = totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
+
+  const redirectToReviewPage = () => {
+    navigate("/reviewLapak"); // Make sure your route is properly set up
+  };
+
 
   return (
     <motion.div
@@ -152,19 +159,18 @@ const LapakInfo = ({ lapak, onClose }) => {
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
 
-      {/* comment */}
-      <div className="rounded-lg text-white ">
+      {/* Comment Section */}
+      <div className="rounded-lg text-white">
         <h2 className="text-xl font-bold mb-2">Ulasan</h2>
         <div className="flex items-start w-full gap-4 py-2">
           <img src={profile} className="w-7 h-7 rounded-full" alt="Profile" />
           <div className="w-full">
-            <div className="flex items-center mb-3">
-              <div className="flex mr-2 gap-1">
-                {[...Array(5)].map((_, index) => (
-                  <Star key={index} size={24} fill="white" stroke="white" />
-                ))}
-              </div>
-            </div>
+            <button
+              onClick={redirectToReviewPage}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+            >
+              Tambahkan Ulasan
+            </button>
           </div>
         </div>
         {/* tambahkan komentar */}
@@ -206,6 +212,19 @@ const LapakInfo = ({ lapak, onClose }) => {
                 />
               )}
               <div className="border-[1px] border-[#AAAABC] my-4"></div>
+ </div>
+
+      <div className="border-[1px] border-[#AAAABC] my-4"></div>
+      <h2 className="text-xl font-bold mb-2">Laporkan Lapak</h2>
+      {/* Laporkan button moved below */}
+      <div>
+        <button
+          onClick={() => navigate("/laporLapak")}
+          className="text-white bg-red-800 py-1 px-4 rounded-lg"
+        >
+          Laporkan
+        </button>
+      </div>
             </div>
           ))
         ) : (
