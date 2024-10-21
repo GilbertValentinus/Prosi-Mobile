@@ -166,9 +166,6 @@ app.get('/api/search', (req, res) => {
 
 });
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 
 // Report lapak endpoint (for submitting reports with file upload)
 app.post("/api/laporLapak", upload.single("foto"), (req, res) => {
