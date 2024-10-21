@@ -1,29 +1,81 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
-import { useNavigate } from "react-router-dom";
-import { Star } from "lucide-react"; // Assuming this import works for other parts
+import { Star } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+
 
 const { lapak1, lapak2, ig, profile } = lapakImages;
 
+const StarRating = ({ rating }) => {
+  const stars = [];
+  for (let i = 0; i < 5; i++) {
+    stars.push(
+      <span
+        key={i}
+        className={i < rating ? "text-yellow-500" : "text-gray-400"}
+      >
+        ★
+      </span>
+    );
+  }
+  return <div>{stars}</div>;
+};
+
 const LapakInfo = ({ lapak, onClose }) => {
-  const panelRef = useRef(null);
+  const panelRef = React.useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [statusLapak, setStatusLapak] = useState("");
   const navigate = useNavigate();
 
-  // Cek apakah perangkat adalah mobile
+  const updateStatus = () => {
+    if (lapak.jam_buka && lapak.jam_tutup) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [openHour, openMinute] = lapak.jam_buka.split(":").map(Number);
+      const [closeHour, closeMinute] = lapak.jam_tutup.split(":").map(Number);
+      const openTime = openHour * 60 + openMinute;
+      const closeTime = closeHour * 60 + closeMinute;
+
+      if (currentTime >= openTime && currentTime < closeTime) {
+        setStatusLapak(`Buka - Tutup pada ${lapak.jam_tutup}`);
+      } else {
+        setStatusLapak(`Tutup - Buka pada ${lapak.jam_buka}`);
+      }
+    } else {
+      setStatusLapak("Waktu buka dan tutup tidak tersedia");
+    }
+  };
+
+  useEffect(() => {
+    updateStatus();
+    const interval = setInterval(updateStatus, 60000);
+    return () => clearInterval(interval);
+  }, [lapak]);
+
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768); // Perangkat mobile jika lebar layar <= 768px
+      setIsMobile(window.innerWidth <= 768);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+
+  // Menghilangkan duplikasi ulasan
+  const uniqueReviews = Array.from(new Set(lapak.ulasan.map(review => review.id_ulasan)))
+    .map(id => lapak.ulasan.find(review => review.id_ulasan === id));
+
+  // Menghitung rata-rata rating dan total ulasan
+  const totalUlasan = uniqueReviews.length;
+  const totalRating = uniqueReviews.reduce((sum, review) => sum + review.rating, 0);
+  const rataRating = totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
+
   const redirectToReviewPage = () => {
     navigate("/reviewLapak"); // Make sure your route is properly set up
   };
+
 
   return (
     <motion.div
@@ -31,32 +83,51 @@ const LapakInfo = ({ lapak, onClose }) => {
       initial={{ y: "100%" }}
       animate={{ y: "0%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      drag={isMobile ? false : "y"} // Nonaktifkan drag di mobile
+      drag={isMobile ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={0.2}
-      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white p-4 rounded-t-[15px] shadow-lg no-scrollbar"
+      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white px-4 rounded-t-[15px] shadow-lg no-scrollbar"
       style={{ zIndex: 1000, maxHeight: "80vh", overflowY: "auto" }}
     >
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{lapak.name}</h2>
-
-        <button onClick={onClose} className="text-white">
-          ×
-        </button>
+      {/* Sticky Header */}
+      <div className="sticky top-0 bg-[#222745] py-4 z-10 w-full">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">{lapak.name}</h2>
+          <button onClick={onClose} className="text-white">
+            ×
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">
         <p>{lapak.address}</p>
-        <p>⭐️⭐️⭐️⭐️⭐️ 4.5 (25)</p>
+        <div className="flex items-center mb-2">
+          <StarRating rating={Math.round(rataRating)} size="40px" />
+          <p className="ml-2 text-[14px]">
+            {rataRating} ({totalUlasan})
+          </p>
+        </div>
         <p>
-          <span className="text-red-600">Tutup</span> - Buka 14.00
+          🕒{" "}
+          {statusLapak.startsWith("Buka") ? (
+            <>
+              <span className="text-green-500">Buka</span> -{" "}
+              {statusLapak.split(" - ")[1]}
+            </>
+          ) : (
+            <>
+              <span className="text-red-500">Tutup</span> -{" "}
+              {statusLapak.split(" - ")[1]}
+            </>
+          )}
         </p>
       </div>
 
+      {/* foto lapak */}
       <div className="flex space-x-2 overflow-x-auto my-4">
-        <img src={lapak1} className="w-full" />
-        <img src={lapak2} className="w-full" />
-        <img src={lapak1} className="w-full" />
+        {lapak.foto && (
+          <img src={lapak.foto} className="w-full max-w-[250px]" alt="Lapak" />
+        )}
       </div>
 
       <div>
@@ -66,14 +137,25 @@ const LapakInfo = ({ lapak, onClose }) => {
 
       <div>
         <p>
-          🕒 <span className="text-red-600"> Tutup</span> - Buka 14.00
+          🕒{" "}
+          {statusLapak.startsWith("Buka") ? (
+            <>
+              <span className="text-green-500">Buka</span> -{" "}
+              {statusLapak.split(" - ")[1]}
+            </>
+          ) : (
+            <>
+              <span className="text-red-500">Tutup</span> -{" "}
+              {statusLapak.split(" - ")[1]}
+            </>
+          )}
         </p>
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
 
       <div className="flex space-x-2">
         <img src={ig} className="size-[22px]" />
-        <p>htts://www.instagram.com/Teel/</p>
+        <p className="truncate">{lapak.situs}</p>
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
 
@@ -91,7 +173,46 @@ const LapakInfo = ({ lapak, onClose }) => {
             </button>
           </div>
         </div>
+        {/* tambahkan komentar */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Tambahkan Komentar"
+            className="w-full bg-[#4C516D] text-white placeholder-gray-400 py-2 px-4 rounded-lg focus:outline-none"
+          />
+        </div>
       </div>
+
+      <div className="border-[1px] border-[#AAAABC] my-4"></div>
+      <div>
+        <h2 className="text-xl font-bold mb-2">Ulasan</h2>
+        {uniqueReviews.length > 0 ? (
+          uniqueReviews.map((review) => (
+            <div key={review.id_ulasan} className="my-4 space-y-1">
+              <div className="flex gap-2">
+                <img
+                  src={profile}
+                  className="w-7 h-7 rounded-full"
+                  alt="Profile"
+                />
+                <p className="font-semibold">{review.nama_pengguna}</p>
+              </div>
+              <div className="flex gap-2">
+                <StarRating rating={review.rating} />
+                <p className="text-[12px] my-auto">
+                  {new Date(review.tanggal).toLocaleDateString()}
+                </p>
+              </div>
+              <p>{review.deskripsi}</p>
+              {review.ulasan_foto && (
+                <img
+                  src={review.ulasan_foto}
+                  alt="Ulasan Foto"
+                  className="my-2"
+                />
+              )}
+              <div className="border-[1px] border-[#AAAABC] my-4"></div>
+ </div>
 
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
       <h2 className="text-xl font-bold mb-2">Laporkan Lapak</h2>
@@ -104,57 +225,11 @@ const LapakInfo = ({ lapak, onClose }) => {
           Laporkan
         </button>
       </div>
-
-      <div className="border-[1px] border-[#AAAABC] my-4"></div>
-      <div className="mt-4">
-        <div className="space-y-2">
-          <div>
-            <div className="flex gap-4">
-              <img
-                src={profile}
-                className="w-7 h-7 rounded-full"
-                alt="Profile"
-              />
-              <p className="font-semibold">Budi</p>
             </div>
-            <p className="py-2">
-              ⭐️⭐️⭐️⭐️⭐️ <span className="text-[12px]">2 tahun lalu</span>{" "}
-            </p>
-            <p>Tempatnya bagus, makanannya enak</p>
-          </div>
-          <div className="border-[1px] border-[#AAAABC] my-4"></div>
-          <div>
-            <div className="flex gap-4">
-              <img
-                src={profile}
-                className="w-7 h-7 rounded-full"
-                alt="Profile"
-              />
-              <p className="font-semibold">Natasha</p>
-            </div>
-            <p className="py-2">
-              ⭐️⭐️⭐️⭐️⭐️ <span className="text-[12px]">2 tahun lalu</span>{" "}
-            </p>
-            <p>
-              Tempatnya bagus, makanannya enak, harganya murah. Recommended!
-            </p>
-          </div>
-          <div className="border-[1px] border-[#AAAABC] my-4"></div>
-          <div>
-            <div className="flex gap-4">
-              <img
-                src={profile}
-                className="w-7 h-7 rounded-full"
-                alt="Profile"
-              />
-              <p className="font-semibold">Sofia</p>
-            </div>
-            <p className="py-2">
-              ⭐️⭐️⭐️⭐️⭐️ <span className="text-[12px]">2 tahun lalu</span>{" "}
-            </p>
-            <p>Tempatnya bagus, makanannya enak</p>
-          </div>
-        </div>
+          ))
+        ) : (
+          <p>Tidak ada ulasan</p>
+        )}
       </div>
     </motion.div>
   );
