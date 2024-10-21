@@ -182,7 +182,6 @@ const LapakInfo = ({ lapak, onClose }) => {
           />
         </div>
       </div>
-
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
       <div>
         <h2 className="text-xl font-bold mb-2">Ulasan</h2>
@@ -212,12 +211,16 @@ const LapakInfo = ({ lapak, onClose }) => {
                 />
               )}
               <div className="border-[1px] border-[#AAAABC] my-4"></div>
- </div>
-
+            </div>
+          ))
+        ) : (
+          <p>Tidak ada ulasan</p>
+        )}
+      </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
       <h2 className="text-xl font-bold mb-2">Laporkan Lapak</h2>
       {/* Laporkan button moved below */}
-      <div>
+      < div >
         <button
           onClick={() => navigate("/laporLapak")}
           className="text-white bg-red-800 py-1 px-4 rounded-lg"
@@ -225,14 +228,10 @@ const LapakInfo = ({ lapak, onClose }) => {
           Laporkan
         </button>
       </div>
-            </div>
-          ))
-        ) : (
-          <p>Tidak ada ulasan</p>
-        )}
-      </div>
     </motion.div>
   );
 };
+
+
 
 export default LapakInfo;
