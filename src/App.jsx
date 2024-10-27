@@ -13,6 +13,7 @@ import KlaimLapak from "./pages/claimlapak";
 import EditLapak from "./pages/editlapak";
 import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
+import LapakDetail from "./pages/detaillapak";
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
         <Route path="/favorit" element={<Favorit /> } />
         <Route path="/lapak" element={<Lapak /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
-        <Route path="/editlapak" element={<EditLapak /> } />
+        <Route path="/editlapak/:id" element={<EditLapak />} />
+        <Route path="/detaillapak/:id" element={<LapakDetail />} />
       </Routes>
     </Router>
   )

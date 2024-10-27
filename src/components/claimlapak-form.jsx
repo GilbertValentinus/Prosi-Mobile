@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react'; // Import icon X dari lucide-react
 
 function ClaimLapak() {
   const [formData, setFormData] = useState({
     namaLapak: '',
     kategoriLapak: '',
     alamat: '',
-    latitude: '', // Tambahkan latitude
-    longitude: '', // Tambahkan longitude
+    latitude: '',
+    longitude: '',
     telepon: '',
     deskripsiLapak: '',
     situs: '',
     layanan: '',
     selectedFile: null,
+    previewUrl: null,
     jamBuka: {}
   });
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,11 +38,29 @@ function ClaimLapak() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        selectedFile: file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  const handleDeleteImage = () => {
+    if (formData.previewUrl) {
+      URL.revokeObjectURL(formData.previewUrl); // Clean up the URL object
+    }
     setFormData(prev => ({
       ...prev,
-      selectedFile: file,
-      previewUrl: URL.createObjectURL(file)
+      selectedFile: null,
+      previewUrl: null
     }));
+    // Reset file input
+    const fileInput = document.getElementById('upload-photo');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const handleToggleOpen = (day) => {
@@ -91,7 +113,6 @@ function ClaimLapak() {
         }
       });
   
-      // Convert jamBuka to an array of objects for each day
       const jamBukaArray = Object.keys(formData.jamBuka).map(day => ({
         hari: day,
         buka: formData.jamBuka[day].buka,
@@ -114,6 +135,7 @@ function ClaimLapak() {
   
       if (data.success) {
         alert('Data lapak berhasil disimpan!');
+        navigate('/');
       } else {
         throw new Error(data.message || 'Failed to save data');
       }
@@ -122,7 +144,6 @@ function ClaimLapak() {
       alert(error.message || 'Gagal mengirim data ke server');
     }
   };
-  
 
   return (
     <div style={styles.formContainer}>
@@ -260,20 +281,32 @@ function ClaimLapak() {
           />
         </div>
 
-        {formData.previewUrl ? (
-          <img src={formData.previewUrl} alt="Preview" style={styles.image} />
-        ) : (
-          <label htmlFor="upload-photo" style={styles.uploadButton}>
-            Tambahkan Foto
-          </label>
-        )}
-        <input
-          type="file"
-          id="upload-photo"
-          accept="image/*"
-          onChange={handleFileChange}
-          style={styles.fileInput}
-        />
+        <div style={styles.imageContainer}>
+          {formData.previewUrl ? (
+            <div style={styles.previewContainer}>
+              <img src={formData.previewUrl} alt="Preview" style={styles.image} />
+              <button
+                type="button"
+                onClick={handleDeleteImage}
+                style={styles.deleteButton}
+                aria-label="Delete image"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          ) : (
+            <label htmlFor="upload-photo" style={styles.uploadButton}>
+              Tambahkan Foto
+            </label>
+          )}
+          <input
+            type="file"
+            id="upload-photo"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={styles.fileInput}
+          />
+        </div>
 
         <button type="submit" style={styles.button}>
           Selesai
@@ -285,72 +318,182 @@ function ClaimLapak() {
 
 const styles = {
   formContainer: {
-    backgroundColor: '#1e1e2f',
+    backgroundColor: '#171D34',
     padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-    width: '400px',
     margin: 'auto',
-    color: '#ffffff'
-  },
-  input: {
-    backgroundColor: '#2a2a4d',
-    border: '1px solid #4d4d6a',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
     color: '#ffffff',
-    borderRadius: '5px',
-    padding: '10px',
-    marginBottom: '15px',
-    width: '100%',
+    overflowY: 'auto', // Menambahkan scrollbar jika konten lebih panjang dari tinggi kontainer
   },
-  select: {
-    backgroundColor: '#2a2a4d',
-    border: '1px solid #4d4d6a',
-    color: '#ffffff',
-    borderRadius: '5px',
-    padding: '10px',
+  
+  inputContainer: {
     marginBottom: '15px',
-    width: '100%',
   },
   label: {
+    color: '#e0e0e0', // Warna teks label yang lebih terang dari teks input
+    display: 'block',
     marginBottom: '5px',
     fontWeight: 'bold',
   },
-  inputContainer: {
-    marginBottom: '20px',
+  input: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50', // Warna border input yang lebih gelap
+    backgroundColor: '#2a2a3d', // Warna background input yang gelap
+    color: '#ffffff', // Warna teks input
+    outline: 'none',
+  },
+  select: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    outline: 'none',
   },
   dayRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: '10px',
   },
   image: {
     width: '100%',
-    height: 'auto',
+    maxHeight: '200px',
+    objectFit: 'cover',
+    borderRadius: '10px',
     marginBottom: '15px',
-    borderRadius: '8px',
   },
   uploadButton: {
-    backgroundColor: '#2a2a4d',
-    padding: '10px',
+    display: 'inline-block',
+    padding: '10px 20px',
+    backgroundColor: '#4e4e73', // Warna tombol unggah foto
+    color: '#ffffff',
+    marginBottom: '2%',
     borderRadius: '5px',
     cursor: 'pointer',
     textAlign: 'center',
-    marginBottom: '15px',
-    display: 'block',
+    width: '100%'
+  },
+  fileInput: {
+    display: 'none', // Menyembunyikan input file default
+  },
+  button: {
     width: '100%',
+    padding: '15px',
+    borderRadius: '5px',
+    backgroundColor: '#3366ff', // Warna biru untuk tombol submit
+    color: '#ffffff',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+    marginBottom: '2%'
+  },
+  buttonHover: {
+    backgroundColor: '#254eda', // Warna lebih gelap saat tombol di-hover
+  },
+  imageContainer: {
+    marginBottom: '15px',
+    position: 'relative',
+  },
+  previewContainer: {
+    position: 'relative',
+    width: '100%',
+    marginBottom: '15px',
+  },
+  image: {
+    width: '100%',
+    maxHeight: '200px',
+    objectFit: 'cover',
+    borderRadius: '10px',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    border: 'none',
+    borderRadius: '50%',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: '#ffffff',
+    padding: '0',
+    transition: 'background-color 0.3s ease',
+  },
+  uploadButton: {
+    display: 'inline-block',
+    padding: '10px 20px',
+    backgroundColor: '#4e4e73',
+    color: '#ffffff',
+    marginBottom: '2%',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    width: '100%'
   },
   fileInput: {
     display: 'none',
   },
   button: {
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    padding: '10px 20px',
-    borderRadius: '5px',
-    cursor: 'pointer',
     width: '100%',
+    padding: '15px',
+    borderRadius: '5px',
+    backgroundColor: '#3366ff',
+    color: '#ffffff',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+    marginBottom: '2%'
+  },
+  buttonHover: {
+    backgroundColor: '#254eda',
+  },
+  formContainer: {
+    backgroundColor: '#171D34',
+    padding: '20px',
+    margin: 'auto',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+    color: '#ffffff',
+    overflowY: 'auto',
+  },
+  inputContainer: {
+    marginBottom: '15px',
+  },
+  label: {
+    color: '#e0e0e0',
+    display: 'block',
+    marginBottom: '5px',
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    outline: 'none',
+  },
+  select: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    outline: 'none',
+  },
+  dayRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '10px',
   },
 };
-
 export default ClaimLapak;

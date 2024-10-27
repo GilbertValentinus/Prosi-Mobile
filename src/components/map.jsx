@@ -229,6 +229,7 @@ useEffect(() => {
             ulasan: selectedLapak.ulasan,
             jam_buka: selectedLapak.jam_buka, // Tambahkan jam_buka
             jam_tutup: selectedLapak.jam_tutup, // Tambahkan jam_tutup
+            
           }}
           onClose={() => setSelectedLapak(null)}
         />

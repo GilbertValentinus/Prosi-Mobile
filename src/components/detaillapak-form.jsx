@@ -22,6 +22,28 @@ function DetailLapak() {
 
   const { id } = useParams();
 
+  // Helper function to format time from HH:mm:ss to HH:mm
+  const formatTime = (time) => {
+    if (!time) return '';
+    // Handle if time is already in correct format
+    if (time.length === 5) return time;
+    return time.substring(0, 5);
+  };
+
+  // Helper function to map day numbers to day names in Indonesian
+  const getDayName = (day) => {
+    const days = {
+      1: 'Senin',
+      2: 'Selasa',
+      3: 'Rabu',
+      4: 'Kamis',
+      5: 'Jumat',
+      6: 'Sabtu',
+      7: 'Minggu'
+    };
+    return days[day] || day;
+  };
+
   useEffect(() => {
     const fetchLapakData = async () => {
       try {
@@ -37,7 +59,24 @@ function DetailLapak() {
         const result = await response.json();
         
         if (result.success && result.data) {
-          setLapakData(result.data);
+          // Format jam buka data
+          const formattedJamBuka = result.data.jamBuka.map(jam => ({
+            hari: getDayName(jam.hari),
+            jamBuka: formatTime(jam.jamBuka),
+            jamTutup: formatTime(jam.jamTutup),
+            buka: jam.buka
+          }));
+
+          // Sort days to ensure correct order
+          formattedJamBuka.sort((a, b) => {
+            const dayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            return dayOrder.indexOf(a.hari) - dayOrder.indexOf(b.hari);
+          });
+
+          setLapakData({
+            ...result.data,
+            jamBuka: formattedJamBuka
+          });
         } else {
           throw new Error(result.message || 'Failed to fetch lapak data');
         }
@@ -64,6 +103,7 @@ function DetailLapak() {
 
   return (
     <div style={styles.formContainer}>
+      {/* Previous sections remain the same */}
       <div style={styles.header}>
         <h1 style={styles.title}>{lapakData.namaLapak}</h1>
         <p style={styles.subtitle}>
@@ -118,14 +158,26 @@ function DetailLapak() {
         <div style={styles.operationalSection}>
           <h2 style={styles.sectionTitle}>Jam Operasional</h2>
           <div style={styles.scheduleGrid}>
-            {lapakData.jamBuka.map((schedule) => (
-              <div key={schedule.hari} style={styles.scheduleItem}>
-                <span style={styles.dayLabel}>{schedule.hari}</span>
-                <span style={schedule.buka ? styles.openTime : styles.closedText}>
-                  {schedule.buka ? `${schedule.jamBuka} - ${schedule.jamTutup}` : 'Tutup'}
-                </span>
+            {Array.isArray(lapakData.jamBuka) && lapakData.jamBuka.length > 0 ? (
+              lapakData.jamBuka.map((schedule, index) => (
+                <div key={index} style={styles.scheduleItem}>
+                  <span style={styles.dayLabel}>{schedule.hari}</span>
+                  <div style={styles.timeContainer}>
+                    {schedule.buka ? (
+                      <span style={styles.openTime}>
+                        {schedule.jamBuka} - {schedule.jamTutup}
+                      </span>
+                    ) : (
+                      <span style={styles.closedText}>Buka</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={styles.scheduleItem}>
+                <span style={styles.noSchedule}>Jadwal tidak tersedia</span>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -142,109 +194,129 @@ const InfoField = ({ label, value }) => (
 );
 
 const styles = {
+  // ... (previous styles remain the same)
   formContainer: {
+    margin: '0 auto',
+    padding: '20px',
     backgroundColor: '#171D34',
-    padding: '2rem',
-    margin: '2rem auto',
-    borderRadius: '12px',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    color: '#ffffff',
-    maxWidth: '1000px',
+    color: '#F1F5F9',
+    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.15)',
   },
   header: {
-    marginBottom: '2rem',
+    marginBottom: '20px',
     textAlign: 'center',
   },
   title: {
-    fontSize: '2rem',
+    fontSize: '24px',
     fontWeight: 'bold',
-    color: '#ffffff',
-    margin: '0 0 0.5rem 0',
+    color: '#E2E8F0',
   },
   subtitle: {
+    fontSize: '14px',
     color: '#94A3B8',
-    fontSize: '0.875rem',
   },
   mainContent: {
-    display: 'grid',
-    gap: '2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
   },
   imageSection: {
-    width: '100%',
-    marginBottom: '2rem',
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '20px',
   },
   image: {
     width: '100%',
-    height: 'auto',
-    maxHeight: '500px',
-    objectFit: 'cover',
+    maxWidth: '300px',
     borderRadius: '8px',
+    objectFit: 'cover',
   },
   infoSection: {
     display: 'grid',
-    gap: '1rem',
-  },
-  infoField: {
-    backgroundColor: '#1E293B',
-    padding: '1rem',
-    borderRadius: '8px',
-  },
-  label: {
-    display: 'block',
-    color: '#94A3B8',
-    fontSize: '0.875rem',
-    marginBottom: '0.5rem',
-  },
-  value: {
-    color: '#ffffff',
-    fontSize: '1rem',
+    gap: '10px',
+    padding: '10px 0',
   },
   descriptionSection: {
-    marginTop: '2rem',
+    padding: '10px 0',
   },
   sectionTitle: {
-    fontSize: '1.25rem',
+    fontSize: '18px',
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: '1rem',
+    color: '#E2E8F0',
+    marginBottom: '10px',
   },
   description: {
-    backgroundColor: '#1E293B',
-    padding: '1rem',
-    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#CBD5E1',
     lineHeight: '1.5',
   },
   operationalSection: {
-    marginTop: '2rem',
+    padding: '10px 0',
   },
   scheduleGrid: {
     display: 'grid',
-    gap: '0.5rem',
+    gap: '8px',
+    backgroundColor: '#0F172A',
+    padding: '15px',
+    borderRadius: '8px',
   },
   scheduleItem: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: '8px 12px',
+    borderBottom: '1px solid #334155',
     backgroundColor: '#1E293B',
-    padding: '0.75rem 1rem',
-    borderRadius: '8px',
+    borderRadius: '6px',
   },
   dayLabel: {
     fontWeight: '500',
     color: '#94A3B8',
+    minWidth: '100px',
+  },
+  timeContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   openTime: {
     color: '#4ADE80',
+    fontSize: '14px',
+    backgroundColor: '#008000',
+    padding: '4px 8px',
+    borderRadius: '4px',
   },
   closedText: {
-    color: '#FF5252',
+    color: '#FFFFFF',
+    fontSize: '14px',
+    backgroundColor: '#008000',
+    padding: '4px 8px',
+    borderRadius: '4px',
+  },
+  noSchedule: {
+    color: '#94A3B8',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    width: '100%',
+  },
+  infoField: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '10px 0',
+    borderBottom: '1px solid #334155',
+  },
+  label: {
+    fontWeight: 'bold',
+    color: '#CBD5E1',
+    minWidth: '150px',
+  },
+  value: {
+    color: '#E2E8F0',
   },
   link: {
-    color: '#60A5FA',
+    color: '#38BDF8',
     textDecoration: 'none',
-    '&:hover': {
-      textDecoration: 'underline',
-    },
   },
 };
 

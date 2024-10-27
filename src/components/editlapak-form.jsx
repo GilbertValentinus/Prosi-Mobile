@@ -1,39 +1,88 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
-function EditLapakForm({ lapakId }) {
+const EditLapak = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     namaLapak: '',
     kategoriLapak: '',
     alamat: '',
     telepon: '',
     deskripsiLapak: '',
+    situs: '',
+    layanan: '',
     selectedFile: null,
-    jamBuka: {}
+    previewUrl: null,
+    jamBuka: []
   });
 
+  // Initialize jam buka state with all days
   useEffect(() => {
-    // Fetch existing lapak data from the server using the lapakId
-    const fetchLapakData = async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/api/lapak/${lapakId}`);
-        const data = await response.json();
-        setFormData({
-          namaLapak: data.nama_lapak,
-          kategoriLapak: data.kategori_lapak,
-          alamat: data.lokasi_lapak,
-          telepon: data.nomor_telepon,
-          deskripsiLapak: data.deskripsi_lapak,
-          jamBuka: data.jam_buka || {},
-          selectedFile: null,
-          previewUrl: data.foto_lapak ? `http://localhost:8080/${data.foto_lapak}` : null
-        });
-      } catch (error) {
-        console.error('Error fetching lapak data:', error);
-      }
+    const initializeJamBuka = () => {
+      const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      const initialJamBuka = days.map(hari => ({
+        hari,
+        buka: false,
+        jamBuka: '',
+        jamTutup: ''
+      }));
+      setFormData(prev => ({ ...prev, jamBuka: initialJamBuka }));
     };
+    initializeJamBuka();
+  }, []);
 
-    fetchLapakData();
-  }, [lapakId]);
+  // Load location data from localStorage
+  useEffect(() => {
+    const selectedLocation = JSON.parse(localStorage.getItem('selectedLocation'));
+    if (selectedLocation?.address) {
+      setFormData(prev => ({
+        ...prev,
+        alamat: selectedLocation.address,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude
+      }));
+    }
+  }, []);
+
+  // Fetch existing lapak data
+  useEffect(() => {
+    if (id) {
+      fetch(`http://localhost:8080/api/lapak/${id}`, {
+        credentials: 'include',
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then(data => {
+          if (data.success && data.data) {
+            const { jamBuka, ...rest } = data.data;
+            const formattedJamBuka = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(hari => {
+              const dayData = jamBuka.find(j => j.hari === hari) || {
+                buka: false,
+                jamBuka: '',
+                jamTutup: ''
+              };
+              return {
+                hari,
+                buka: dayData.buka,
+                jamBuka: dayData.jamBuka || '',
+                jamTutup: dayData.jamTutup || ''
+              };
+            });
+            
+            setFormData(prev => ({
+              ...prev,
+              ...rest,
+              jamBuka: formattedJamBuka,
+              previewUrl: data.data.foto ? data.data.foto : null // Set previewUrl from existing data
+            }));
+          }
+        })
+        .catch(error => console.error('Error fetching lapak data:', error));
+    }
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,65 +91,83 @@ function EditLapakForm({ lapakId }) {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setFormData(prev => ({ 
-      ...prev, 
-      selectedFile: file,
-      previewUrl: URL.createObjectURL(file)
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        selectedFile: file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  const handleToggleOpen = (dayIndex) => {
+    setFormData(prev => ({
+      ...prev,
+      jamBuka: prev.jamBuka.map((day, index) => 
+        index === dayIndex ? { ...day, buka: !day.buka } : day
+      )
     }));
   };
 
-  const handleToggleOpen = (day) => {
+  const handleTimeChange = (dayIndex, field, value) => {
     setFormData(prev => ({
       ...prev,
-      jamBuka: {
-        ...prev.jamBuka,
-        [day]: {
-          ...prev.jamBuka[day],
-          buka: !prev.jamBuka[day]?.buka,
-          jamBuka: '',
-          jamTutup: ''
-        }
-      }
+      jamBuka: prev.jamBuka.map((day, index) => 
+        index === dayIndex ? { ...day, [field]: value } : day
+      )
     }));
   };
 
-  const handleTimeChange = (day, field, value) => {
+  const handleRemovePhoto = () => {
     setFormData(prev => ({
       ...prev,
-      jamBuka: {
-        ...prev.jamBuka,
-        [day]: {
-          ...prev.jamBuka[day],
-          [field]: value
-        }
-      }
+      selectedFile: null,
+      previewUrl: null
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
+      const userResponse = await fetch('http://localhost:8080/api/user', { 
+        credentials: 'include' 
+      });
+      const userData = await userResponse.json();
+      const userId = userData?.user?.id_pengguna;
+
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+
       const formDataToSend = new FormData();
-      formDataToSend.append('lapakId', lapakId);
+      formDataToSend.append('userId', userId);
+      formDataToSend.append('lapakId', id);
 
       // Append basic form fields
-      Object.keys(formData).forEach(key => {
+      Object.entries(formData).forEach(([key, value]) => {
         if (key !== 'selectedFile' && key !== 'previewUrl' && key !== 'jamBuka') {
-          formDataToSend.append(key, formData[key]);
+          formDataToSend.append(key, value);
         }
       });
 
-      // Append operating hours
-      formDataToSend.append('jamBuka', JSON.stringify(formData.jamBuka));
+      // Append formatted jamBuka data
+      const jamBukaData = formData.jamBuka.map(({ hari, buka, jamBuka, jamTutup }) => ({
+        hari,
+        buka,
+        jamBuka: buka ? jamBuka : '',
+        jamTutup: buka ? jamTutup : ''
+      }));
       
-      // Append file if exists
+      formDataToSend.append('jamBuka', JSON.stringify(jamBukaData));
+
+      // Append file if selected
       if (formData.selectedFile) {
         formDataToSend.append('foto', formData.selectedFile);
       }
 
       const response = await fetch('http://localhost:8080/api/edit-lapak', {
-        method: 'PUT',
+        method: 'POST',
         body: formDataToSend,
         credentials: 'include',
       });
@@ -109,20 +176,22 @@ function EditLapakForm({ lapakId }) {
 
       if (data.success) {
         alert('Data lapak berhasil diperbarui!');
+        navigate('/');
       } else {
-        throw new Error(data.message || 'Failed to update data');
+        throw new Error(data.message || 'Failed to save data');
       }
     } catch (error) {
-      console.error('Error updating lapak:', error);
+      console.error('Error submitting form:', error);
       alert(error.message || 'Gagal mengirim data ke server');
     }
   };
 
   return (
     <div style={styles.formContainer}>
+      <h2 style={styles.title}>Edit Lapak</h2>
       <form onSubmit={handleSubmit}>
         <div style={styles.inputContainer}>
-          <label style={styles.label}>Nama lapak</label>
+          <label style={styles.label}>Nama Lapak</label>
           <input
             type="text"
             name="namaLapak"
@@ -144,7 +213,7 @@ function EditLapakForm({ lapakId }) {
           >
             <option value="">Pilih Kategori</option>
             <option value="warung">Warung</option>
-            <option value="kaki_lima">Kaki Lima</option>
+            <option value="kaki lima">Kaki Lima</option>
             <option value="cafe">Cafe</option>
           </select>
         </div>
@@ -162,6 +231,30 @@ function EditLapakForm({ lapakId }) {
         </div>
 
         <div style={styles.inputContainer}>
+          <label style={styles.label}>Latitude</label>
+          <input
+            type="text"
+            name="latitude"
+            value={formData.latitude}
+            onChange={handleChange}
+            style={styles.input}
+            readOnly
+          />
+        </div>
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Longitude</label>
+          <input
+            type="text"
+            name="longitude"
+            value={formData.longitude}
+            onChange={handleChange}
+            style={styles.input}
+            readOnly
+          />
+        </div>
+
+        <div style={styles.inputContainer}>
           <label style={styles.label}>No. Telepon</label>
           <input
             type="tel"
@@ -173,127 +266,259 @@ function EditLapakForm({ lapakId }) {
           />
         </div>
 
-        {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((day) => (
-          <div key={day} style={styles.dayRow}>
-            <label style={styles.label}>{day}</label>
-            <input
-              type="checkbox"
-              checked={formData.jamBuka[day]?.buka || false}
-              onChange={() => handleToggleOpen(day)}
-            />
-            <input
-              type="time"
-              value={formData.jamBuka[day]?.jamBuka || ''}
-              onChange={(e) => handleTimeChange(day, 'jamBuka', e.target.value)}
-              disabled={!formData.jamBuka[day]?.buka}
-              style={styles.input}
-            />
-            <input
-              type="time"
-              value={formData.jamBuka[day]?.jamTutup || ''}
-              onChange={(e) => handleTimeChange(day, 'jamTutup', e.target.value)}
-              disabled={!formData.jamBuka[day]?.buka}
-              style={styles.input}
-            />
-          </div>
-        ))}
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>Jam Operasional</h3>
+          {formData.jamBuka.map((day, index) => (
+            <div key={day.hari} style={styles.dayRow}>
+              <label style={styles.dayLabel}>{day.hari}</label>
+              <div style={styles.timeControls}>
+                <input
+                  type="checkbox"
+                  checked={day.buka}
+                  onChange={() => handleToggleOpen(index)}
+                  style={styles.checkbox}
+                />
+                <input
+                  type="time"
+                  value={day.jamBuka}
+                  onChange={(e) => handleTimeChange(index, 'jamBuka', e.target.value)}
+                  disabled={!day.buka}
+                  style={styles.timeInput}
+                />
+                <input
+                  type="time"
+                  value={day.jamTutup}
+                  onChange={(e) => handleTimeChange(index, 'jamTutup', e.target.value)}
+                  disabled={!day.buka}
+                  style={styles.timeInput}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div style={styles.inputContainer}>
-          <label style={styles.label}>Deskripsi lapak</label>
+          <label style={styles.label}>Deskripsi Lapak</label>
           <textarea
             name="deskripsiLapak"
             value={formData.deskripsiLapak}
             onChange={handleChange}
-            style={{ ...styles.input, minHeight: '100px' }}
+            style={styles.textarea}
+            required
           />
         </div>
 
-        {formData.previewUrl ? (
-          <img src={formData.previewUrl} alt="Preview" style={styles.image} />
-        ) : (
-          <label htmlFor="upload-photo" style={styles.uploadButton}>
-            Tambahkan Foto
-          </label>
-        )}
-        <input
-          type="file"
-          id="upload-photo"
-          accept="image/*"
-          onChange={handleFileChange}
-          style={styles.fileInput}
-        />
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Situs Web</label>
+          <input
+            type="url"
+            name="situs"
+            value={formData.situs}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
 
-        <button type="submit" style={styles.button}>
-          Perbarui
-        </button>
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Layanan</label>
+          <input
+            type="text"
+            name="layanan"
+            value={formData.layanan}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
+
+        <div style={styles.inputContainer}>
+          <label style={styles.label}>Foto Lapak</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={styles.fileInput}
+          />
+          {formData.previewUrl && (
+            <div style={styles.previewContainer}>
+              <img src={formData.previewUrl} alt="Preview" style={styles.previewImage} />
+              <button type="button" onClick={handleRemovePhoto} style={styles.removeButton}>Hapus Foto</button>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" style={styles.submitButton}>Simpan Perubahan</button>
       </form>
     </div>
   );
-}
+};
 
 const styles = {
   formContainer: {
-    backgroundColor: '#1e1e2f', // Dark background
+    backgroundColor: '#171D34',
     padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-    width: '400px', // Adjust as needed
     margin: 'auto',
-    color: '#ffffff' // White text
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+    color: '#ffffff',
+    overflowY: 'auto', // Add scrollbar if content exceeds container height
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: '20px',
+  },
+  inputContainer: {
+    marginBottom: '15px',
+  },
+  label: {
+    color: '#e0e0e0', // Lighter color for label text
+    display: 'block',
+    marginBottom: '5px',
+    fontWeight: 'bold',
   },
   input: {
-    backgroundColor: '#2a2a4d', // Dark input background
-    border: '1px solid #4d4d6a', // Border color
-    color: '#ffffff', // Text color
-    borderRadius: '5px',
+    width: '100%',
     padding: '10px',
-    marginBottom: '15px',
-    width: '100%', // Full width
+    borderRadius: '5px',
+    border: '1px solid #3a3a50', // Darker border color
+    backgroundColor: '#2a2a3d', // Dark background for input
+    color: '#ffffff', // Input text color
+    outline: 'none',
   },
   select: {
-    backgroundColor: '#2a2a4d',
-    border: '1px solid #4d4d6a',
-    color: '#ffffff',
-    borderRadius: '5px',
-    padding: '10px',
-    marginBottom: '15px',
     width: '100%',
-  },
-  button: {
-    backgroundColor: '#4d88ff', // Light blue button
-    color: '#ffffff',
-    padding: '10px 15px',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    width: '100%',
-  },
-  uploadButton: {
-    backgroundColor: '#4d88ff', // Same as button
-    color: '#ffffff',
     padding: '10px',
     borderRadius: '5px',
-    display: 'inline-block',
-    cursor: 'pointer',
-    marginBottom: '15px',
-    textAlign: 'center',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    outline: 'none',
+  },
+  textarea: {
     width: '100%',
+    padding: '10px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    outline: 'none',
+    height: '100px',
   },
-  fileInput: {
-    display: 'none', // Hide the default file input
-  },
-  image: {
-    maxWidth: '100%', // Ensure the image fits within the container
+  section: {
     marginBottom: '15px',
+    padding: '10px',
+    border: '1px solid #3a3a50',
+    borderRadius: '5px',
+    backgroundColor: '#2a2a3d',
+  },
+  sectionTitle: {
+    margin: '0 0 10px 0',
+    color: '#ffffff',
   },
   dayRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: '10px',
+  },
+  dayLabel: {
+    flex: '1',
+    fontWeight: 'bold',
+    color: '#e0e0e0',
+  },
+  timeControls: {
+    flex: '2',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  checkbox: {
+    marginRight: '10px',
+  },
+  timeInput: {
+    marginRight: '10px',
+    padding: '5px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    width: '80px',
+  },
+  previewContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    marginTop: '10px',
+  },
+  previewImage: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '5px',
+    marginRight: '10px',
+  },
+  removeButton: {
+    padding: '5px 10px',
+    backgroundColor: '#ff4d4d',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+  },
+  submitButton: {
+    padding: '10px 15px',
+    backgroundColor: '#3366ff', // Button color
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    width: '100%',
+    transition: 'background-color 0.3s ease',
+  },
+  submitButtonHover: {
+    backgroundColor: '#254eda', // Darker color on hover
+  },
+  fileInput: {
+    display: 'block',
+    marginTop: '10px',
+  },
+  section: {
     marginBottom: '15px',
-    color: '#ffffff', // Text color for the day labels
-  }
+    padding: '10px',
+    border: '1px solid #3a3a50',
+    borderRadius: '5px',
+    backgroundColor: '#2a2a3d',
+  },
+  sectionTitle: {
+    margin: '0 0 10px 0',
+    color: '#ffffff',
+  },
+  dayRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '10px',
+    width: '100%', // Ensure it takes the full width
+  },
+  dayLabel: {
+    flex: '1',
+    fontWeight: 'bold',
+    color: '#e0e0e0',
+    textAlign: 'left', // Align text to the left
+  },
+  timeControls: {
+    flex: '2',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between', // Ensure space is distributed evenly
+  },
+  checkbox: {
+    marginRight: '10px',
+  },
+  timeInput: {
+    marginRight: '10px',
+    padding: '5px',
+    borderRadius: '5px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
+    width: '80px',
+  },
 };
 
-export default EditLapakForm;
+export default EditLapak;
