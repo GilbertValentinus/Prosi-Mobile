@@ -15,9 +15,8 @@ import Searchbar from "./searchbar";
 
 import DraggableLocationInfo from "./location-info";
 import { mapImages } from "../assets";
-import { useNavigate } from "react-router-dom";
-import { lapakImages } from "../assets"; // Import gambar
-const { profile } = lapakImages; // Ambil ikon profile
+
+
 
 const { clickLocationIcon, currentLocationIcon, shopIcon } = mapImages;
 
@@ -178,21 +177,14 @@ function Map() {
     setSelectedLapak(lapak);
     setIsPanelOpen(false);
   };
-  
-  const handleSelectLocation = (lat, lng, lapakInfo,lapak) => {
+
+  const handleSelectLocation = (lat, lng, lapakInfo, lapak) => {
     setMapCenter([lat, lng]);
     setMapZoom(200);
     handleLapakClick(lapak)
     // if (lapakInfo) {
     //   setSelectedLapak(lapakInfo);
     // }
-  };
-
-  const navigate = useNavigate();
-
-  // Fungsi untuk handle ketika tombol profile diklik
-  const goToProfile = () => {
-    navigate("/profileUser");
   };
 
   return (
@@ -237,13 +229,7 @@ function Map() {
           </Marker>
         ))}
       </MapContainer>
-      {/* Ikon Profile di pojok kanan atas */}
-      <div
-        className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg cursor-pointer"
-        onClick={goToProfile}
-      >
-        <img src={profile} className="w-7 h-7 rounded-full" alt="Profile" />
-      </div>
+
 
 
       {locationInfo && isPanelOpen && (
@@ -266,6 +252,7 @@ function Map() {
         <LapakInfo
           key={`lapak-info-${selectedLapak.id_lapak}`}
           lapak={{
+            id_lapak: selectedLapak .id_lapak,
             name: selectedLapak.nama_lapak,
             address: selectedLapak.lokasi_lapak,
             situs: selectedLapak.situs,
