@@ -15,6 +15,7 @@ import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
 import Bantuan  from "./pages/bantuan";
 import Pilihsubject  from "./pages/pilihsubject";
+import Navigation from "./pages/navigation";
 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <Route path="/Pilihsubject" element={<Pilihsubject /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
         <Route path="/editlapak" element={<EditLapak /> } />
+        <Route path="/navigation" element={<Navigation /> } />
       </Routes>
     </Router>
   )
