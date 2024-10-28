@@ -8,8 +8,6 @@ import multer from "multer";
 
 const app = express();
 const port = 8080;
-
-
 const storage = multer.memoryStorage(); // This stores the file as a buffer
 const upload = multer({ storage: storage });
 
@@ -50,17 +48,6 @@ const pool = mysql.createPool({
   database: "prosi",
   host: "127.0.0.1",
 });
-
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/');
-//   },
-//   filename: (req, file, cb) => {
-//     cb(null, Date.now() + '-' + file.originalname);
-//   }
-// });
-
-// const upload = multer({ storage });
 
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
@@ -194,42 +181,159 @@ app.get('/api/test-db', (req, res) => {
     }
     res.json({ success: true, message: 'Connected to the database', result: results });
   });
-});
-
-app.post('/api/claim-lapak',isAuthenticated, upload.single('foto'), (req, res) => {
-  const {
-    userId, namaLapak, kategoriLapak, alamat,
-    telepon, deskripsiLapak
-  } = req.body;
-  const fotoPath = req.file ? req.file.path : null;
-
-  if (!userId) {
-    return res.status(400).json({ success: false, message: 'User ID is required' });
-  }
-
-  const insertLapakQuery = `
-      INSERT INTO lapak (id_pengguna, nama_lapak, kategori_lapak, lokasi_lapak,
-                        nomor_telepon, deskripsi_lapak, foto_lapak)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-  pool.query(insertLapakQuery,
-    [userId, namaLapak, kategoriLapak, alamat,
-      telepon, deskripsiLapak, fotoPath],
-    (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ success: false, message: 'Failed to save lapak' });
-      }
-      res.json({ success: true, message: 'Lapak saved successfully' });
+  
+  app.post('/api/claim-lapak', upload.single('foto'), (req, res) => {
+    const { 
+      userId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan, 
+      latitude, longitude 
+    } = req.body;
+  
+    const jamBuka = JSON.parse(req.body.jamBuka);
+    const foto = req.file ? req.file.buffer : null; // Simpan file sebagai buffer untuk BLOB
+    const tanggalKlaim = new Date();
+  
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
     }
-  );
-});
+  
+    const insertLapakQuery = `
+      INSERT INTO lapak (id_pengguna, nama_lapak, kategori_lapak, lokasi_lapak,
+                        nomor_telepon, deskripsi_lapak, situs, layanan, 
+                        latitude, longitude, tanggal_pengajuan, foto_lapak)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+  
+    pool.query(insertLapakQuery, 
+      [userId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan, 
+      latitude, longitude, tanggalKlaim, foto], 
+      (err, results) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ success: false, message: 'Failed to save lapak' });
+        }
+  
+        const lapakId = results.insertId;
+  
+        // Insert data jam buka ke tabel 'buka' dan 'hari'
+        const insertBukaQuery = `
+          INSERT INTO buka (id_lapak, id_hari, jam_buka, jam_tutup)
+          VALUES (?, (SELECT id_hari FROM hari WHERE nama_hari = ?), ?, ?)
+        `;
+  
+        const bukaPromises = jamBuka.map(entry => {
+          if (entry.buka) {
+            return new Promise((resolve, reject) => {
+              pool.query(insertBukaQuery, 
+                [lapakId, entry.hari, entry.jamBuka, entry.jamTutup], 
+                (err) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+            });
+          }
+          return Promise.resolve();
+        });
+  
+        Promise.all(bukaPromises)
+          .then(() => {
+            res.json({ success: true, message: 'Lapak and buka times saved successfully' });
+          })
+          .catch(err => {
+            console.error("Error saving buka times:", err);
+            res.status(500).json({ success: false, message: 'Failed to save buka times' });
+          });
+      }
+    );
+  });
+  
 
-app.get('/api/lapak', (req, res) => {
-  const currentDay = new Date().getDay();
+  app.post('/api/edit-lapak', upload.single('foto'), (req, res) => {
+    const { 
+      userId, lapakId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan
+    } = req.body;
 
-  const query = `
+    console.log('Received lapakId:', lapakId);
+  
+    const jamBuka = JSON.parse(req.body.jamBuka);
+    const fotoPath = req.file ? req.file.buffer : null;
+    const tanggalKlaim = new Date();
+  
+    if (!userId || !lapakId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: !userId ? 'User ID is required' : 'Lapak ID is required' 
+      });
+    }
+  
+    // Tambahkan log untuk memeriksa nilai lapakId
+    console.log('Lapak ID:', lapakId);
+  
+    const insertLapakQuery = `
+      INSERT INTO pembaruan_lapak (
+        id_pengguna, id_lapak, nama_lapak_pembaruan, 
+        kategori_lapak_pembaruan, lokasi_lapak_pembaruan,
+        nomor_telepon_pembaruan, deskripsi_lapak_pembaruan, 
+        situs_pembaruan, layanan_pembaruan, 
+        tanggal_pengajuan_pembaruan, foto_lapak_pembaruan
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+  
+    pool.query(insertLapakQuery, 
+      [userId, lapakId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan, tanggalKlaim, fotoPath], 
+      (err, results) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ success: false, message: 'Failed to save lapak' });
+        }
+
+        const pembaruanId = results.insertId;
+  
+        // Insert data jam buka ke tabel 'buka' dan 'hari'
+        const insertBukaQuery = `
+          INSERT INTO buka_pembaruan (id_lapak, id_hari, id_pembaruan, jam_buka, jam_tutup)
+          VALUES (?, (SELECT id_hari FROM hari WHERE nama_hari = ?), ?, ?, ?)
+        `;
+
+        const bukaPromises = jamBuka.map(entry => {
+          if (entry.buka) {
+            return new Promise((resolve, reject) => {
+              pool.query(insertBukaQuery, 
+                [lapakId, entry.hari, pembaruanId, entry.jamBuka, entry.jamTutup], 
+                (err) => {
+                  if (err) {
+                    console.error(`Error inserting buka data for ${entry.hari}:`, err); // Tambahkan log untuk error
+                    return reject(err);
+                  }
+                  resolve();
+                }
+              );
+            });
+          }
+          return Promise.resolve();
+        });
+
+        Promise.all(bukaPromises)
+          .then(() => {
+            res.json({ success: true, message: 'Lapak and buka times saved successfully' });
+          })
+          .catch(err => {
+            console.error("Error saving buka times:", err);
+            res.status(500).json({ success: false, message: 'Failed to save buka times' });
+        });
+          }
+      );
+  });
+  
+  app.get('/api/lapak', (req, res) => {
+    const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
+    
+    const query = `
       SELECT 
         l.id_lapak, 
         l.nama_lapak, 
@@ -659,8 +763,176 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
       reviewId: result.insertId 
     });
   });
-});
+  
+  app.get('/api/lapak-summary', (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ success: false, message: 'User not logged in' });
+    }
+  
+    const userId = req.session.userId;
+  
+    const query = `
+      SELECT id_lapak, nama_lapak, lokasi_lapak, status_lapak
+      FROM lapak
+      WHERE id_pengguna = ?
+    `;
+  
+    pool.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+  
+      console.log('Database results:', results); // Log hasil query
+  
+      const lapaks = results.map(row => ({
+        id: row.id_lapak,
+        name: row.nama_lapak,
+        address: row.lokasi_lapak,
+        status: row.status_lapak // Changed from status_lapak to status for consistency
+      }));
+  
+      res.json({ success: true, lapaks });
+    });
+  });
 
+  
+  app.delete('/api/lapak/:id', (req, res) => {
+    const lapakId = req.params.id;
+    const userId = req.session.userId;
+  
+    // Log untuk memastikan ID yang diterima
+    console.log(`Attempting to delete lapak with ID: ${lapakId} for user ID: ${userId}`);
+  
+    pool.getConnection((err, connection) => {
+      if (err) {
+        console.error('Database connection error:', err);
+        return res.status(500).json({ success: false, message: 'Database connection error' });
+      }
+  
+      // Memulai transaksi
+      connection.beginTransaction(err => {
+        if (err) {
+          console.error('Transaction error:', err);
+          connection.release();
+          return res.status(500).json({ success: false, message: 'Transaction error' });
+        }
+  
+        // Array query untuk penghapusan
+        const queries = [
+          `DELETE FROM buka WHERE id_lapak = ?`,
+          `DELETE FROM buka_pembaruan WHERE id_lapak = ?`,
+          `DELETE FROM lapak_favorit WHERE id_lapak = ?`,
+          `DELETE FROM laporan WHERE id_lapak = ?`,
+          `DELETE FROM pembaruan_lapak WHERE id_lapak = ?`,
+          `DELETE FROM ulasan WHERE id_lapak = ?`,
+          `DELETE FROM lapak WHERE id_lapak = ? AND id_pengguna = ?`
+        ];
+  
+        const deletePromises = queries.map((query, index) => {
+          return new Promise((resolve, reject) => {
+            // Menjalankan setiap query penghapusan
+            connection.query(query, [lapakId, userId], (err, results) => {
+              if (err) {
+                console.error(`Error executing query ${index + 1}: ${query}`, err); // Log kesalahan untuk query tertentu
+                return reject(err); // Jika error, reject promise
+              }
+              resolve(results);
+            });
+          });
+        });
+  
+        // Eksekusi semua penghapusan secara bersamaan
+        Promise.all(deletePromises)
+          .then(() => {
+            // Commit transaksi jika semua penghapusan berhasil
+            connection.commit(err => {
+              if (err) {
+                console.error('Transaction commit error:', err);
+                return connection.rollback(() => {
+                  connection.release();
+                  return res.status(500).json({ success: false, message: 'Transaction commit error' });
+                });
+              }
+              connection.release();
+              console.log(`Lapak and related records for ID ${lapakId} deleted successfully.`);
+              res.json({ success: true, message: 'Lapak and related records deleted successfully' });
+            });
+          })
+          .catch(err => {
+            // Rollback jika ada error
+            console.error('Error during deletion:', err);
+            connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, message: 'Failed to delete records', error: err.message });
+            });
+          });
+      });
+    });
+  });
+  
+// Route untuk mengambil daftar semua lapak
+// Endpoint untuk mengambil data lapak berdasarkan lapakId
+app.get('/api/lapak/:lapakId', (req, res) => {
+  const { lapakId } = req.params;
+  console.log(`Mengambil data lapak untuk lapakId: ${lapakId}`); // Logging untuk pengecekan
+
+  // Query untuk mendapatkan data lapak berdasarkan lapakId
+  const getLapakQuery = `
+    SELECT lapak.id_lapak, lapak.nama_lapak, lapak.kategori_lapak, lapak.lokasi_lapak AS alamat,
+           lapak.nomor_telepon AS telepon, lapak.deskripsi_lapak, lapak.situs, lapak.layanan, 
+           lapak.latitude, lapak.longitude, lapak.tanggal_pengajuan, lapak.foto_lapak,
+           GROUP_CONCAT(CONCAT(hari.nama_hari, ':', IFNULL(buka.jam_buka, ''), '-', IFNULL(buka.jam_tutup, ''))
+           ORDER BY hari.id_hari ASC) AS jamBuka
+    FROM lapak
+    LEFT JOIN buka ON lapak.id_lapak = buka.id_lapak
+    LEFT JOIN hari ON buka.id_hari = hari.id_hari
+    WHERE lapak.id_lapak = ?
+    GROUP BY lapak.id_lapak
+  `;
+
+  pool.query(getLapakQuery, [lapakId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ success: false, message: 'Failed to retrieve lapak data' });
+    }
+
+    if (results.length === 0) {
+      console.log("Lapak tidak ditemukan.");
+      return res.status(404).json({ success: false, message: 'Lapak not found' });
+    }
+
+    const lapak = results[0];
+    console.log("Data lapak ditemukan:", lapak); // Logging untuk melihat hasil query
+
+    // Memproses jam buka menjadi array objek yang mudah digunakan di frontend
+    const jamBukaArray = lapak.jamBuka
+      ? lapak.jamBuka.split(',').map(entry => {
+          const [hari, jam] = entry.split(':');
+          const [jamBuka, jamTutup] = jam.split('-');
+          return { hari, buka: Boolean(jamBuka && jamTutup), jamBuka, jamTutup };
+        })
+      : [];
+
+    const responseData = {
+      idLapak: lapak.id_lapak,
+      namaLapak: lapak.nama_lapak,
+      kategoriLapak: lapak.kategori_lapak,
+      alamat: lapak.alamat,
+      telepon: lapak.telepon,
+      deskripsiLapak: lapak.deskripsi_lapak,
+      situs: lapak.situs,
+      layanan: lapak.layanan,
+      latitude: lapak.latitude,
+      longitude: lapak.longitude,
+      tanggalPengajuan: lapak.tanggal_pengajuan,
+      fotoUrl: lapak.foto_lapak,
+      jamBuka: jamBukaArray
+    };
+
+    res.json({ success: true, data: responseData });
+  });
+});
 
 app.get('/api/review/:id_lapak', (req, res) => {
   const id_lapak = req.params.id_lapak; // Get id_lapak from URL parameter
@@ -812,7 +1084,6 @@ app.get('/api/laporUlasan/:id_ulasan', (req, res) => {
     return res.json({ success: true, reports });
   });
 });
-
 
 // ===============vincent
 app.listen(port, () => {
