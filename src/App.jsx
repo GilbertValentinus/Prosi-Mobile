@@ -15,6 +15,12 @@ import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
 import Bantuan  from "./pages/bantuan";
 import Pilihsubject  from "./pages/pilihsubject";
+//vincent
+import Review from "./pages/reviewLapak";
+import Lapor from "./pages/laporLapak";
+import LaporUlas from "./pages/laporUlasan";
+import Profile from "./pages/profileUser";
+//vincent
 import Navigation from "./pages/navigation";
 
 
@@ -22,7 +28,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+      <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login/> } />
         <Route path="/signup" element={<Signup /> } />
         <Route path="/claimlapak1" element={<KlaimLapak1 /> } />
@@ -37,7 +43,17 @@ function App() {
         <Route path="/Pilihsubject" element={<Pilihsubject /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
         <Route path="/editlapak" element={<EditLapak /> } />
+
+        <Route path="/reviewLapak" element={<Review />} />
+        <Route path="/reviewLapak/:id_lapak" element={<Review />} />
+        <Route path="/laporLapak" element={<Lapor />} />
+        <Route path="/laporLapak/:id_lapak" element={<Lapor />} />
+        <Route path="/laporUlasan" element={<LaporUlas />} />
+        <Route path="/laporUlasan/:id_ulasan" element={<LaporUlas />} />
+        <Route path="/profileUser" element={<Profile />} />
+
         <Route path="/navigation" element={<Navigation /> } />
+
       </Routes>
     </Router>
   )

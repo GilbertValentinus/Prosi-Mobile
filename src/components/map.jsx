@@ -16,6 +16,8 @@ import Searchbar from "./searchbar";
 import DraggableLocationInfo from "./location-info";
 import { mapImages } from "../assets";
 
+
+
 const { clickLocationIcon, currentLocationIcon, shopIcon } = mapImages;
 
 const CurrentLocationIcon = L.icon({
@@ -51,11 +53,9 @@ const fetchAddress = async (lat, lng) => {
     if (response.data) {
       return {
         name: response.data.address.road || "Unknown Road",
-        fullAddress: `${response.data.address.road || ""}, ${
-          response.data.address.suburb || ""
-        }, ${response.data.address.city || ""}, ${
-          response.data.address.state || ""
-        }, ${response.data.address.country || ""}`,
+        fullAddress: `${response.data.address.road || ""}, ${response.data.address.suburb || ""
+          }, ${response.data.address.city || ""}, ${response.data.address.state || ""
+          }, ${response.data.address.country || ""}`,
         plusCode: "N/A",
       };
     }
@@ -177,8 +177,8 @@ function Map() {
     setSelectedLapak(lapak);
     setIsPanelOpen(false);
   };
-  
-  const handleSelectLocation = (lat, lng, lapakInfo,lapak) => {
+
+  const handleSelectLocation = (lat, lng, lapakInfo, lapak) => {
     setMapCenter([lat, lng]);
     setMapZoom(200);
     handleLapakClick(lapak)
@@ -186,7 +186,6 @@ function Map() {
     //   setSelectedLapak(lapakInfo);
     // }
   };
-
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -231,6 +230,8 @@ function Map() {
         ))}
       </MapContainer>
 
+
+
       {locationInfo && isPanelOpen && (
         <DraggableLocationInfo
           key={`location-info-${clickedLocation?.lat}-${clickedLocation?.lng}`}
@@ -251,6 +252,7 @@ function Map() {
         <LapakInfo
           key={`lapak-info-${selectedLapak.id_lapak}`}
           lapak={{
+            id_lapak: selectedLapak .id_lapak,
             name: selectedLapak.nama_lapak,
             address: selectedLapak.lokasi_lapak,
             situs: selectedLapak.situs,
