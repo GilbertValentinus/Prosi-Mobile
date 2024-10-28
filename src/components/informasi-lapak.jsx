@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
-import { Star,Navigation2 } from "lucide-react";
+import { Star, Navigation2, Heart } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { FiMoreHorizontal } from "react-icons/fi"; // Importing three-dot icon from react-icons
 
@@ -29,9 +29,65 @@ const LapakInfo = ({ lapak, onClose }) => {
   const [statusLapak, setStatusLapak] = useState("");
   const [selectedReview, setSelectedReview] = useState(null);
   const navigate = useNavigate();
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const handleFavorite = async () => {
+    console.log("Lapak ID:", lapak.lapakId);
+    
+    try {
+      if (isFavorite) {
+        // Menghapus dari favorit jika sudah difavoritkan
+        const response = await fetch("http://localhost:8080/api/lapak/favorit", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ lapakId: lapak.lapakId }),
+        });
+  
+        const data = await response.json();
+        if (data.success) {
+          setIsFavorite(false);
+          // Hapus dari localStorage
+          localStorage.removeItem(`favorite-${lapak.lapakId}`);
+        } else {
+          alert(data.message);
+        }
+      } else {
+        // Menambahkan ke favorit jika belum difavoritkan
+        const response = await fetch("http://localhost:8080/api/lapak/favorit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ lapakId: lapak.lapakId }),
+        });
+  
+        const data = await response.json();
+        if (data.success) {
+          setIsFavorite(true);
+          // Simpan ke localStorage
+          localStorage.setItem(`favorite-${lapak.lapakId}`, true);
+        } else {
+          alert(data.message);
+        }
+      }
+    } catch (error) {
+      console.error("Error handling favorite:", error);
+    }
+  };
+  
+  
+  useEffect(() => {
+    const isFavorited = localStorage.getItem(`favorite-${lapak.lapakId}`);
+    if (isFavorited) {
+      setIsFavorite(true);
+    }
+  }, [lapak.lapakId]);
+  
   const [activeReviewId, setActiveReviewId] = useState(null); // State for the active review ID
-
-
 
   const updateStatus = () => {
     if (lapak.jam_buka && lapak.jam_tutup) {
@@ -122,9 +178,20 @@ const LapakInfo = ({ lapak, onClose }) => {
       <div className="sticky top-0 bg-[#222745] py-4 z-10 w-full">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">{lapak.name}</h2>
-          <button onClick={onClose} className="text-white">
-            ×
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Button Favorite */}
+            <button onClick={handleFavorite} className="mr-2">
+            <Heart
+                size={24}
+                className={isFavorite ? "text-red-500" : "text-white"}
+                fill={isFavorite ? "currentColor" : "none"}
+              />
+            </button>
+            {/* Button Close */}
+            <button onClick={onClose} className="text-white text-xl">
+              ×
+            </button>
+          </div>
         </div>
       </div>
 

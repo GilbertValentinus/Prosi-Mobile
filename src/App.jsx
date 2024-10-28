@@ -13,6 +13,7 @@ import KlaimLapak from "./pages/claimlapak";
 import EditLapak from "./pages/editlapak";
 import Favorit from "./pages/favorit";
 import Lapak from "./pages/lapak";
+import LapakDetail from "./pages/detaillapak";
 import Bantuan  from "./pages/bantuan";
 import Pilihsubject  from "./pages/pilihsubject";
 //vincent
@@ -22,7 +23,6 @@ import LaporUlas from "./pages/laporUlasan";
 import Profile from "./pages/profileUser";
 //vincent
 import Navigation from "./pages/navigation";
-
 
 function App() {
   return (
@@ -42,8 +42,9 @@ function App() {
         <Route path="/bantuan" element={<Bantuan /> } />
         <Route path="/Pilihsubject" element={<Pilihsubject /> } />
         <Route path="/claimlapak" element={<KlaimLapak /> } />
+        <Route path="/editlapak/:id" element={<EditLapak />} />
+        <Route path="/detaillapak/:id" element={<LapakDetail />} />
         <Route path="/editlapak" element={<EditLapak /> } />
-
         <Route path="/reviewLapak" element={<Review />} />
         <Route path="/reviewLapak/:id_lapak" element={<Review />} />
         <Route path="/laporLapak" element={<Lapor />} />
@@ -52,7 +53,6 @@ function App() {
         <Route path="/laporUlasan/:id_ulasan" element={<LaporUlas />} />
         <Route path="/profileUser" element={<Profile />} />
         <Route path="/navigation" element={<Navigation /> } />
-
       </Routes>
     </Router>
   )
