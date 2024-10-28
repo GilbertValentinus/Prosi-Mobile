@@ -154,10 +154,10 @@ app.get('/api/search', (req, res) => {
   const searchQuery = `
     SELECT * FROM lapak
     Where status_lapak = "terverifikasi" 
-    AND nama_lapak LIKE ? 
+    AND ( nama_lapak LIKE ? 
     OR deskripsi_lapak LIKE ? 
     OR kategori_lapak LIKE ? 
-    OR lokasi_lapak LIKE ?
+    OR lokasi_lapak LIKE ? )
     LIMIT 20
   `;
 
@@ -181,7 +181,8 @@ app.get('/api/test-db', (req, res) => {
     }
     res.json({ success: true, message: 'Connected to the database', result: results });
   });
-  
+});
+
   app.post('/api/claim-lapak', upload.single('foto'), (req, res) => {
     const { 
       userId, namaLapak, kategoriLapak, alamat, 
@@ -331,7 +332,7 @@ app.get('/api/test-db', (req, res) => {
   });
   
   app.get('/api/lapak', (req, res) => {
-    const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const currentDay = new Date().getDay();
     
     const query = `
       SELECT 
@@ -359,88 +360,110 @@ app.get('/api/test-db', (req, res) => {
       ORDER BY u.tanggal DESC
     `;
 
-  pool.query(query, [currentDay], (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ success: false, message: 'Database error' });
-    }
+    pool.query(query, [currentDay], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
 
-    const lapaks = results.reduce((acc, row) => {
-      // Fungsi helper untuk mengkonversi BLOB ke base64
-      const convertBlobToBase64 = (blob) => {
-        if (!blob) return null;
+        // Handle empty results
+        if (!results || results.length === 0) {
+            return res.json({ 
+                success: true, 
+                lapaks: [], 
+                message: 'Tidak ada lapak yang buka hari ini' 
+            });
+        }
+
         try {
-          const base64 = Buffer.from(blob).toString('base64');
-          return `data:image/jpeg;base64,${base64}`;
+            const convertBlobToBase64 = (blob) => {
+                if (!blob) return null;
+                try {
+                    const base64 = Buffer.from(blob).toString('base64');
+                    return `data:image/jpeg;base64,${base64}`;
+                } catch (error) {
+                    console.error('Error converting blob to base64:', error);
+                    return null;
+                }
+            };
+
+            const lapaks = results.reduce((acc, row) => {
+                // Konversi foto ulasan dan lapak
+                const ulasan_foto_base64 = convertBlobToBase64(row.ulasan_foto);
+                const foto_lapak_base64 = convertBlobToBase64(row.foto_lapak);
+
+                // Buat objek review
+                const review = row.id_ulasan ? {
+                    id_ulasan: row.id_ulasan,
+                    rating: row.rating,
+                    tanggal: row.tanggal,
+                    deskripsi: row.deskripsi,
+                    foto: ulasan_foto_base64,
+                    nama_pengguna: row.nama_pengguna
+                } : null;
+
+                // Cari lapak yang sudah ada
+                const existingLapak = acc.find(l => l.id_lapak === row.id_lapak);
+
+                if (existingLapak) {
+                    if (review) {
+                        const reviewExists = existingLapak.ulasan.some(u => u.id_ulasan === review.id_ulasan);
+                        if (!reviewExists) {
+                            existingLapak.ulasan.push(review);
+                        }
+                    }
+                } else {
+                    // Buat lapak baru
+                    acc.push({
+                        id_lapak: row.id_lapak,
+                        nama_lapak: row.nama_lapak,
+                        lokasi_lapak: row.lokasi_lapak,
+                        latitude: row.latitude,
+                        longitude: row.longitude,
+                        situs: row.situs,
+                        foto_lapak: foto_lapak_base64,
+                        jam_buka: row.jam_buka,
+                        jam_tutup: row.jam_tutup,
+                        ulasan: review ? [review] : []
+                    });
+                }
+                return acc;
+            }, []);
+
+            // Sort ulasan for each lapak
+            lapaks.forEach(lapak => {
+                if (lapak.ulasan && lapak.ulasan.length > 0) {
+                    lapak.ulasan.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+                }
+            });
+
+            // Check if any lapaks were found
+            if (lapaks.length === 0) {
+                return res.json({ 
+                    success: true, 
+                    lapaks: [], 
+                    message: 'Tidak ada lapak yang buka hari ini' 
+                });
+            }
+
+            // Return the processed lapaks
+            return res.json({ 
+                success: true, 
+                lapaks,
+                message: `${lapaks.length} lapak ditemukan`
+            });
+
         } catch (error) {
-          console.error('Error converting blob to base64:', error);
-          return null;
+            console.error('Error processing data:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error processing data',
+                error: error.message 
+            });
         }
-      };
-
-      // Konversi foto ulasan
-      const ulasan_foto_base64 = convertBlobToBase64(row.ulasan_foto);
-      
-      // Konversi foto lapak
-      const foto_lapak_base64 = convertBlobToBase64(row.foto_lapak);
-
-      // Buat objek review hanya jika id_ulasan ada
-      const review = row.id_ulasan ? {
-        id_ulasan: row.id_ulasan,
-        rating: row.rating,
-        tanggal: row.tanggal,
-        deskripsi: row.deskripsi,
-        foto: ulasan_foto_base64, // Pastikan nama properti ini adalah 'foto'
-        nama_pengguna: row.nama_pengguna
-      } : null;
-
-      // Cari lapak yang sudah ada
-      const existingLapak = acc.find(l => l.id_lapak === row.id_lapak);
-
-      if (existingLapak) {
-        // Tambahkan review baru ke lapak yang sudah ada (jika review valid)
-        if (review) {
-          // Cek apakah review sudah ada untuk mencegah duplikasi
-          const reviewExists = existingLapak.ulasan.some(u => u.id_ulasan === review.id_ulasan);
-          if (!reviewExists) {
-            existingLapak.ulasan.push(review);
-          }
-        }
-      } else {
-        // Buat lapak baru
-        acc.push({
-          id_lapak: row.id_lapak,
-          nama_lapak: row.nama_lapak,
-          lokasi_lapak: row.lokasi_lapak,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          situs: row.situs,
-          foto_lapak: foto_lapak_base64,
-          jam_buka: row.jam_buka,
-          jam_tutup: row.jam_tutup,
-          ulasan: review ? [review] : []
-        });
-      }
-      return acc;
-    }, []);
-
-    // Sort ulasan for each lapak by date (newest first)
-    lapaks.forEach(lapak => {
-      lapak.ulasan.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
     });
-  });
-      
-    if (lapaks.length === 0) {
-      return res.json({ 
-        success: true, 
-        lapaks: [], 
-        message: 'Tidak ada lapak yang buka hari ini' 
-      });
-    }
-
-    res.json({ success: true, lapaks });
-  });
 });
+
 
 // Endpoint untuk menambahkan lapak favorit
 app.post('/api/lapak/favorit', (req, res) => {
@@ -854,6 +877,7 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
       reviewId: result.insertId 
     });
   });
+});
   
   app.get('/api/lapak-summary', (req, res) => {
     if (!req.session.userId) {
