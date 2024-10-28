@@ -288,8 +288,6 @@ app.get('/api/test-db', (req, res) => {
       );
   });
   
- 
-
   app.get('/api/lapak', (req, res) => {
     const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
     

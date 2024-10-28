@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate untuk navigasi
+import { ArrowLeft } from 'lucide-react';
 
 function DetailLapak() {
   const [lapakData, setLapakData] = useState({
@@ -21,16 +22,14 @@ function DetailLapak() {
   const [error, setError] = useState(null);
 
   const { id } = useParams();
+  const navigate = useNavigate(); // useNavigate hook untuk navigasi
 
-  // Helper function to format time from HH:mm:ss to HH:mm
   const formatTime = (time) => {
     if (!time) return '';
-    // Handle if time is already in correct format
     if (time.length === 5) return time;
     return time.substring(0, 5);
   };
 
-  // Helper function to map day numbers to day names in Indonesian
   const getDayName = (day) => {
     const days = {
       1: 'Senin',
@@ -59,7 +58,6 @@ function DetailLapak() {
         const result = await response.json();
         
         if (result.success && result.data) {
-          // Format jam buka data
           const formattedJamBuka = result.data.jamBuka.map(jam => ({
             hari: getDayName(jam.hari),
             jamBuka: formatTime(jam.jamBuka),
@@ -67,7 +65,6 @@ function DetailLapak() {
             buka: jam.buka
           }));
 
-          // Sort days to ensure correct order
           formattedJamBuka.sort((a, b) => {
             const dayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
             return dayOrder.indexOf(a.hari) - dayOrder.indexOf(b.hari);
@@ -103,7 +100,11 @@ function DetailLapak() {
 
   return (
     <div style={styles.formContainer}>
-      {/* Previous sections remain the same */}
+      {/* Tombol kembali */}
+      <button onClick={() => navigate(-1)} style={styles.backButton}>
+        <ArrowLeft style={styles.arrowIcon} />
+      </button>
+
       <div style={styles.header}>
         <h1 style={styles.title}>{lapakData.namaLapak}</h1>
         <p style={styles.subtitle}>
@@ -185,7 +186,6 @@ function DetailLapak() {
   );
 }
 
-// Helper component for displaying info fields
 const InfoField = ({ label, value }) => (
   <div style={styles.infoField}>
     <span style={styles.label}>{label}</span>
@@ -194,13 +194,14 @@ const InfoField = ({ label, value }) => (
 );
 
 const styles = {
-  // ... (previous styles remain the same)
   formContainer: {
     margin: '0 auto',
     padding: '20px',
     backgroundColor: '#171D34',
     color: '#F1F5F9',
     boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.15)',
+    width: '100%',
+    position: 'relative',
   },
   header: {
     marginBottom: '20px',
@@ -210,6 +211,24 @@ const styles = {
     fontSize: '24px',
     fontWeight: 'bold',
     color: '#E2E8F0',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    textDecoration: 'none',
+    color: '#E2E8F0',
+    position: 'absolute',
+    left: '10px',
+    top: '10px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  arrowIcon: {
+    fontSize: '24px',
+    color: '#E2E8F0',
+    marginRight: '5px',
   },
   subtitle: {
     fontSize: '14px',
@@ -232,9 +251,10 @@ const styles = {
     objectFit: 'cover',
   },
   infoSection: {
-    display: 'grid',
-    gap: '10px',
-    padding: '10px 0',
+    width: '100%',
+    // display: 'grid',
+    // gap: '10px',
+    // padding: '10px 0',
   },
   descriptionSection: {
     padding: '10px 0',
@@ -260,18 +280,31 @@ const styles = {
     padding: '15px',
     borderRadius: '8px',
   },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    textDecoration: 'none',
+    color: '#E2E8F0',
+    position: 'absolute',
+    left: '10px',
+    top: '10px',
+  },
+  arrowIcon: {
+    fontSize: '24px',
+    color: '#E2E8F0',
+  },
   scheduleItem: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 12px',
     borderBottom: '1px solid #334155',
-    backgroundColor: '#1E293B',
+    backgroundColor: '#171D34',
     borderRadius: '6px',
   },
   dayLabel: {
     fontWeight: '500',
-    color: '#94A3B8',
+    color: '#ffffff',
     minWidth: '100px',
   },
   timeContainer: {

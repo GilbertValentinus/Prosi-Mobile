@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react'; // Import icon X dari lucide-react
+import { X, ArrowLeft } from 'lucide-react'; // Import icon X dari lucide-react
 
 function ClaimLapak() {
   const [formData, setFormData] = useState({
@@ -135,7 +135,7 @@ function ClaimLapak() {
   
       if (data.success) {
         alert('Data lapak berhasil disimpan!');
-        navigate('/');
+        navigate('/lapak');
       } else {
         throw new Error(data.message || 'Failed to save data');
       }
@@ -147,6 +147,10 @@ function ClaimLapak() {
 
   return (
     <div style={styles.formContainer}>
+      <Link to="/" className="mr-4">
+        <ArrowLeft className="w-6 h-6" />
+      </Link>
+      <h2 style={styles.title}>Claim Lapak</h2>
       <form onSubmit={handleSubmit}>
         <div style={styles.inputContainer}>
           <label style={styles.label}>Nama lapak</label>
@@ -329,12 +333,6 @@ const styles = {
   inputContainer: {
     marginBottom: '15px',
   },
-  label: {
-    color: '#e0e0e0', // Warna teks label yang lebih terang dari teks input
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: 'bold',
-  },
   input: {
     width: '100%',
     padding: '10px',
@@ -358,6 +356,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: '10px',
+    width: '100%',
   },
   image: {
     width: '100%',
@@ -366,6 +365,7 @@ const styles = {
     borderRadius: '10px',
     marginBottom: '15px',
   },
+  
   uploadButton: {
     display: 'inline-block',
     padding: '10px 20px',
@@ -426,19 +426,20 @@ const styles = {
     padding: '0',
     transition: 'background-color 0.3s ease',
   },
+  title: {
+    textAlign: 'center',
+    marginBottom: '20px',
+    color: '#ffffff',
+  },
   uploadButton: {
     display: 'inline-block',
     padding: '10px 20px',
     backgroundColor: '#4e4e73',
     color: '#ffffff',
-    marginBottom: '2%',
     borderRadius: '5px',
     cursor: 'pointer',
     textAlign: 'center',
     width: '100%'
-  },
-  fileInput: {
-    display: 'none',
   },
   button: {
     width: '100%',
@@ -453,14 +454,6 @@ const styles = {
   },
   buttonHover: {
     backgroundColor: '#254eda',
-  },
-  formContainer: {
-    backgroundColor: '#171D34',
-    padding: '20px',
-    margin: 'auto',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-    color: '#ffffff',
-    overflowY: 'auto',
   },
   inputContainer: {
     marginBottom: '15px',
@@ -479,21 +472,6 @@ const styles = {
     backgroundColor: '#2a2a3d',
     color: '#ffffff',
     outline: 'none',
-  },
-  select: {
-    width: '100%',
-    padding: '10px',
-    borderRadius: '5px',
-    border: '1px solid #3a3a50',
-    backgroundColor: '#2a2a3d',
-    color: '#ffffff',
-    outline: 'none',
-  },
-  dayRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
   },
 };
 export default ClaimLapak;

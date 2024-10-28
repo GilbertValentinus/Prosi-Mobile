@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { X, ArrowLeft, Weight } from 'lucide-react';
 
 const EditLapak = () => {
   const { id } = useParams();
@@ -14,7 +15,11 @@ const EditLapak = () => {
     layanan: '',
     selectedFile: null,
     previewUrl: null,
-    jamBuka: []
+    jamBuka: [],
+    foto: null,
+    isPhotoChanged: false,
+    latitude: '',
+    longitude: ''
   });
 
   // Initialize jam buka state with all days
@@ -57,7 +62,7 @@ const EditLapak = () => {
         })
         .then(data => {
           if (data.success && data.data) {
-            const { jamBuka, ...rest } = data.data;
+            const { jamBuka, foto, ...rest } = data.data;
             const formattedJamBuka = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(hari => {
               const dayData = jamBuka.find(j => j.hari === hari) || {
                 buka: false,
@@ -76,7 +81,8 @@ const EditLapak = () => {
               ...prev,
               ...rest,
               jamBuka: formattedJamBuka,
-              previewUrl: data.data.foto ? data.data.foto : null // Set previewUrl from existing data
+              foto: foto,
+              previewUrl: foto ? foto : null
             }));
           }
         })
@@ -92,10 +98,24 @@ const EditLapak = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
       setFormData(prev => ({
         ...prev,
         selectedFile: file,
-        previewUrl: URL.createObjectURL(file)
+        previewUrl: URL.createObjectURL(file),
+        isPhotoChanged: true
       }));
     }
   };
@@ -122,35 +142,49 @@ const EditLapak = () => {
     setFormData(prev => ({
       ...prev,
       selectedFile: null,
-      previewUrl: null
+      previewUrl: null,
+      foto: null,
+      isPhotoChanged: true
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
       const userResponse = await fetch('http://localhost:8080/api/user', { 
         credentials: 'include' 
       });
       const userData = await userResponse.json();
       const userId = userData?.user?.id_pengguna;
-
+  
       if (!userId) {
         throw new Error('User not logged in');
       }
-
+  
       const formDataToSend = new FormData();
-      formDataToSend.append('userId', userId);
-      formDataToSend.append('lapakId', id);
-
+      
       // Append basic form fields
       Object.entries(formData).forEach(([key, value]) => {
-        if (key !== 'selectedFile' && key !== 'previewUrl' && key !== 'jamBuka') {
+        if (!['selectedFile', 'previewUrl', 'jamBuka', 'isPhotoChanged', 'foto'].includes(key)) {
           formDataToSend.append(key, value);
         }
       });
-
+  
+      // Append user ID and lapak ID
+      formDataToSend.append('userId', userId);
+      formDataToSend.append('lapakId', id);
+  
+      // Handle photo upload
+      if (formData.isPhotoChanged) {
+        if (formData.selectedFile) {
+          formDataToSend.append('foto', formData.selectedFile);
+        } else {
+          // If photo was removed, send a flag to delete it
+          formDataToSend.append('deletePhoto', 'true');
+        }
+      }
+  
       // Append formatted jamBuka data
       const jamBukaData = formData.jamBuka.map(({ hari, buka, jamBuka, jamTutup }) => ({
         hari,
@@ -160,23 +194,23 @@ const EditLapak = () => {
       }));
       
       formDataToSend.append('jamBuka', JSON.stringify(jamBukaData));
-
-      // Append file if selected
-      if (formData.selectedFile) {
-        formDataToSend.append('foto', formData.selectedFile);
-      }
-
+  
       const response = await fetch('http://localhost:8080/api/edit-lapak', {
         method: 'POST',
         body: formDataToSend,
         credentials: 'include',
       });
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update lapak');
+      }
+  
       const data = await response.json();
-
+  
       if (data.success) {
         alert('Data lapak berhasil diperbarui!');
-        navigate('/');
+        navigate('/lapak');
       } else {
         throw new Error(data.message || 'Failed to save data');
       }
@@ -188,6 +222,9 @@ const EditLapak = () => {
 
   return (
     <div style={styles.formContainer}>
+      <Link to="/lapak" className="mr-4">
+        <ArrowLeft className="w-6 h-6" />
+      </Link>
       <h2 style={styles.title}>Edit Lapak</h2>
       <form onSubmit={handleSubmit}>
         <div style={styles.inputContainer}>
@@ -332,21 +369,43 @@ const EditLapak = () => {
 
         <div style={styles.inputContainer}>
           <label style={styles.label}>Foto Lapak</label>
+          
+          {/* Custom file input */}
+          <label htmlFor="fileUpload" style={styles.customFileButton}>
+            Choose File
+          </label>
           <input
+            id="fileUpload"
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            style={styles.fileInput}
+            style={{ display: 'none' }} // Hide the default file input
           />
+          
           {formData.previewUrl && (
             <div style={styles.previewContainer}>
-              <img src={formData.previewUrl} alt="Preview" style={styles.previewImage} />
-              <button type="button" onClick={handleRemovePhoto} style={styles.removeButton}>Hapus Foto</button>
+              <div style={styles.imageWrapper}>
+                <img 
+                  src={formData.previewUrl} 
+                  alt="Preview" 
+                  style={styles.previewImage} 
+                />
+                <button 
+                  type="button" 
+                  onClick={handleRemovePhoto} 
+                  style={styles.removeButton}
+                  aria-label="Remove photo"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        <button type="submit" style={styles.submitButton}>Simpan Perubahan</button>
+        <button type="submit" style={styles.submitButton}>
+          Simpan Perubahan
+        </button>
       </form>
     </div>
   );
@@ -356,32 +415,75 @@ const styles = {
   formContainer: {
     backgroundColor: '#171D34',
     padding: '20px',
-    margin: 'auto',
+    margin: '0 auto',
     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
     color: '#ffffff',
-    overflowY: 'auto', // Add scrollbar if content exceeds container height
+    overflowY: 'auto',
+    width: '100%', // Buat lebar form 100%
   },
   title: {
     textAlign: 'center',
     marginBottom: '20px',
+    color: '#ffffff',
   },
   inputContainer: {
     marginBottom: '15px',
+    width: '100%', // Pastikan semua elemen input memenuhi lebar form
+  },
+  previewContainer: {
+    marginTop: '10px',
+    position: 'relative',
+    display: 'inline-block',
+    width: '100%', // Menyesuaikan dengan lebar form
+  },
+  imageWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 'auto',
+  },
+  previewImage: {
+    width: '100%',
+    borderRadius: '5px',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    // backgroundColor: '#ff4d4f',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '24px',
+    height: '24px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
-    color: '#e0e0e0', // Lighter color for label text
+    color: '#e0e0e0',
     display: 'block',
     marginBottom: '5px',
     fontWeight: 'bold',
   },
+  
   input: {
-    width: '100%',
+    width: '100%', // Sesuaikan lebar input dengan lebar kontainer
     padding: '10px',
     borderRadius: '5px',
-    border: '1px solid #3a3a50', // Darker border color
-    backgroundColor: '#2a2a3d', // Dark background for input
-    color: '#ffffff', // Input text color
+    border: '1px solid #3a3a50',
+    backgroundColor: '#2a2a3d',
+    color: '#ffffff',
     outline: 'none',
+  },
+  timeInput: {
+    color: '#ffffff', // Ubah warna teks menjadi hitam
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #3a3a50',
+    backgroundColor: '#171D34', // Pastikan latar belakang berwarna putih agar teks hitam terlihat jelas
+    outline: 'none',
+    width: '100%', // Pastikan input time sesuai dengan lebar yang diinginkan
   },
   select: {
     width: '100%',
@@ -401,124 +503,65 @@ const styles = {
     color: '#ffffff',
     outline: 'none',
     height: '100px',
+    resize: 'vertical',
   },
   section: {
     marginBottom: '15px',
-    padding: '10px',
+    padding: '15px',
     border: '1px solid #3a3a50',
     borderRadius: '5px',
     backgroundColor: '#2a2a3d',
+    width: '100%', // Sesuaikan lebar section dengan form
   },
   sectionTitle: {
-    margin: '0 0 10px 0',
+    margin: '0 0 15px 0',
     color: '#ffffff',
+    fontSize: '1.1em',
+    Weight: 'bolder',
   },
-  dayRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
-  },
-  dayLabel: {
-    flex: '1',
-    fontWeight: 'bold',
-    color: '#e0e0e0',
-  },
-  timeControls: {
-    flex: '2',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  checkbox: {
-    marginRight: '10px',
-  },
-  timeInput: {
-    marginRight: '10px',
-    padding: '5px',
-    borderRadius: '5px',
-    border: '1px solid #3a3a50',
-    backgroundColor: '#2a2a3d',
-    color: '#ffffff',
-    width: '80px',
-  },
-  previewContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    marginTop: '10px',
-  },
-  previewImage: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '5px',
-    marginRight: '10px',
-  },
-  removeButton: {
-    padding: '5px 10px',
-    backgroundColor: '#ff4d4d',
+  customFileButton: {
+    width: '100%', // Same width as the submit button
+    padding: '10px',
+    backgroundColor: '#4e4e73',
     color: '#ffffff',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    display: 'inline-block',
+  },
+  dayRow: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '10px',
+    padding: '8px',
+    backgroundColor: '#0F172A',
+    borderRadius: '4px',
+  },
+  dayLabel: {
+    flex: '1',
+    fontWeight: 'bold',
+  },
+  timeControls: {
+    display: 'flex',
+    gap: '10px', // Tambahkan gap untuk jarak antar elemen waktu
+    flex: '2',
+  },
+  checkbox: {
+    marginRight: '10px',
   },
   submitButton: {
-    padding: '10px 15px',
-    backgroundColor: '#3366ff', // Button color
+    width: '100%', // Buat tombol submit memenuhi lebar form
+    padding: '10px',
+    backgroundColor: '#4CAF50',
     color: '#ffffff',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
-    width: '100%',
-    transition: 'background-color 0.3s ease',
-  },
-  submitButtonHover: {
-    backgroundColor: '#254eda', // Darker color on hover
-  },
-  fileInput: {
-    display: 'block',
-    marginTop: '10px',
-  },
-  section: {
-    marginBottom: '15px',
-    padding: '10px',
-    border: '1px solid #3a3a50',
-    borderRadius: '5px',
-    backgroundColor: '#2a2a3d',
-  },
-  sectionTitle: {
-    margin: '0 0 10px 0',
-    color: '#ffffff',
-  },
-  dayRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
-    width: '100%', // Ensure it takes the full width
-  },
-  dayLabel: {
-    flex: '1',
     fontWeight: 'bold',
-    color: '#e0e0e0',
-    textAlign: 'left', // Align text to the left
-  },
-  timeControls: {
-    flex: '2',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between', // Ensure space is distributed evenly
-  },
-  checkbox: {
-    marginRight: '10px',
-  },
-  timeInput: {
-    marginRight: '10px',
-    padding: '5px',
-    borderRadius: '5px',
-    border: '1px solid #3a3a50',
-    backgroundColor: '#2a2a3d',
-    color: '#ffffff',
-    width: '80px',
   },
 };
+
 
 export default EditLapak;
