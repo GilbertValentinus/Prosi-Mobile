@@ -1,23 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { lapakImages } from "../assets";
+import axios from "axios";
 
 const { profile } = lapakImages;
 
 const LaporUlasanPage = () => {
   const navigate = useNavigate();
-  const { id_ulasan } = useParams(); // Changed to get id_ulasan
+  const { id_ulasan } = useParams();
   const location = useLocation();
+  const { lapak } = location.state || {};
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { review } = location.state || {}; // Get the review data
+  const { review } = location.state || {};
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    console.log("Location state:", location.state);
-  console.log(id_ulasan);
-  console.log(review); // Log the review object to inspect its contents
-   
     const fetchUser = async () => {
       try {
         const response = await fetch("http://localhost:8080/api/user", {
@@ -37,12 +35,40 @@ const LaporUlasanPage = () => {
       }
     };
     fetchUser();
-  }, [navigate, review]); // Add review to the dependency array to ensure it's logged on changes
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle report submission logic here
-    console.log("Submitting report:", description); // Debugging output
+
+    if (!description || !id_ulasan || !lapak?.id_lapak) {
+      alert("Mohon lengkapi semua field.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/laporUlasan",
+        {
+          alasan_ulasan: description,
+          id_ulasan: id_ulasan,
+          id_lapak: lapak.id_lapak
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert("Laporan berhasil dikirim!");
+        navigate(-1);
+      }
+    } catch (error) {
+      console.error("Error submitting report:", error.response?.data || error.message);
+      alert("Gagal mengirim laporan. Silakan coba lagi.");
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -54,7 +80,7 @@ const LaporUlasanPage = () => {
           ←
         </button>
         <h1 className="ml-4 text-xl font-semibold">
-          Laporkan Ulasan 
+          Laporkan Ulasan
         </h1>
       </div>
 
@@ -62,9 +88,19 @@ const LaporUlasanPage = () => {
         <h2 className="text-lg mb-2">Deskripsi Ulasan - {review?.nama_pengguna || "Nama Tidak Ditemukan"}</h2>
         <p>- {review?.deskripsi || "Deskripsi tidak tersedia."}</p>
       </div>
+      {review?.foto && (
+        <div className="flex justify-center space-x-2 overflow-x-auto my-4">
+          <img
+            src={review.foto}
+            alt="Ulasan Foto"
+            className="w-full max-w-[250px] h-auto object-cover rounded-lg"
+          />
+        </div>
+      )}
+
 
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <h2 className="text-lg mb-2">Tambahkan Deskripsi Laporan</h2>
