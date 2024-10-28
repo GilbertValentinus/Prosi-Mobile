@@ -218,7 +218,7 @@ app.get('/api/test-db', (req, res) => {
     console.log('Received lapakId:', lapakId);
   
     const jamBuka = JSON.parse(req.body.jamBuka);
-    const fotoPath = req.file ? req.file.path : null;
+    const fotoPath = req.file ? req.file.buffer : null;
     const tanggalKlaim = new Date();
   
     if (!userId || !lapakId) {

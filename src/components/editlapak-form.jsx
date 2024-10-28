@@ -16,8 +16,8 @@ const EditLapak = () => {
     selectedFile: null,
     previewUrl: null,
     jamBuka: [],
-    foto: null,
-    isPhotoChanged: false,
+    // foto: null,
+    // isPhotoChanged: false,
     latitude: '',
     longitude: ''
   });
