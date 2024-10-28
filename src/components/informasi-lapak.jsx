@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
-import { Star } from "lucide-react";
+import { Star,Navigation2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
 const { lapak1, lapak2, ig, profile } = lapakImages;
@@ -151,6 +151,27 @@ const LapakInfo = ({ lapak, onClose }) => {
         <p className="truncate">{lapak.situs}</p>
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
+
+
+
+      <div className="my-4">
+        <button
+           onClick={() => navigate('/navigation', { 
+              state: { 
+                destination: {
+                  latitude: lapak.latitude,
+                  longitude: lapak.longitude,
+                  nama_lapak: lapak.name
+                } 
+              }
+        })}
+        className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+        >
+       <Navigation2 size={20} />
+        Directions
+        </button>
+      </div>
+
 
       {/* comment */}
       <div className="rounded-lg text-white ">

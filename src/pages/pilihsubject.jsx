@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
 const TopicSelectionPage = () => {
@@ -52,6 +53,11 @@ const TopicSelectionPage = () => {
   if (existingTicket) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#171D34] text-white p-4">
+        <ArrowLeft
+          className="absolute top-4 left-4 cursor-pointer text-white"
+          onClick={() => navigate('/')}
+          size={24}
+        />
         <h2 className="text-2xl mb-4">Anda memiliki tiket dukungan yang sedang berlangsung</h2>
         <p className="mb-4">Topik: {existingTicket.subject}</p>
         <button
@@ -66,6 +72,11 @@ const TopicSelectionPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#171D34] text-white p-4">
+      <ArrowLeft
+        className="absolute top-4 left-4 cursor-pointer text-white"
+        onClick={() => navigate('/')}
+        size={24}
+      />
       <h1 className="text-3xl mb-6">Pilih Topik Dukungan</h1>
       <form onSubmit={handleSubmit} className="w-full max-w-md">
         <select
