@@ -334,7 +334,7 @@ app.get('/api/test-db', (req, res) => {
   });
   
   
-app.get('/api/lapak', (req, res) => {
+  app.get('/api/lapak', (req, res) => {
     const currentDay = new Date().getDay();
     
     const query = `
@@ -453,7 +453,7 @@ app.get('/api/lapak', (req, res) => {
             return res.json({ 
                 success: true, 
                 lapaks,
-                message: ${lapaks.length} lapak ditemukan
+                message: `${lapaks.length} lapak ditemukan`
             });
 
         } catch (error) {
