@@ -428,7 +428,8 @@ app.get('/api/test-db', (req, res) => {
     lapaks.forEach(lapak => {
       lapak.ulasan.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
     });
-
+  });
+      
     if (lapaks.length === 0) {
       return res.json({ 
         success: true, 
@@ -438,6 +439,96 @@ app.get('/api/test-db', (req, res) => {
     }
 
     res.json({ success: true, lapaks });
+  });
+});
+
+// Endpoint untuk menambahkan lapak favorit
+app.post('/api/lapak/favorit', (req, res) => {
+  const { lapakId } = req.body;
+
+  if (!lapakId) {
+    return res.status(400).json({ success: false, message: "lapakId is required" });
+  }
+
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: "Silakan login terlebih dahulu" });
+  }
+
+  const query = "INSERT INTO lapak_favorit (id_pengguna, id_lapak) VALUES (?, ?)";
+  pool.query(query, [req.session.userId, lapakId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ success: false, message: `Database error: ${err.message}` });
+    }
+    res.json({ success: true, message: "Lapak ditambahkan ke favorit" });
+  });
+});
+
+// Endpoint untuk menghapus lapak favorit
+app.delete('/api/lapak/favorit', (req, res) => {
+  const { lapakId } = req.body;
+
+  if (!lapakId) {
+    return res.status(400).json({ success: false, message: "lapakId is required" });
+  }
+
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, message: "Silakan login terlebih dahulu" });
+  }
+
+  const query = "DELETE FROM lapak_favorit WHERE id_pengguna = ? AND id_lapak = ?";
+  pool.query(query, [req.session.userId, lapakId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ success: false, message: `Database error: ${err.message}` });
+    }
+    res.json({ success: true, message: "Lapak dihapus dari favorit" });
+  });
+});
+
+app.get('/api/lapak/favorite/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const currentDay = new Date().getDay();
+
+  // Log untuk debugging
+  console.log('Request for user ID:', userId);
+  console.log('Current day:', currentDay);
+
+  const query = `
+    SELECT DISTINCT
+      l.id_lapak, 
+      l.nama_lapak, 
+      l.lokasi_lapak,
+      b.jam_buka,
+      b.jam_tutup
+    FROM lapak_favorit lf
+    JOIN lapak l ON lf.id_lapak = l.id_lapak
+    LEFT JOIN buka b ON l.id_lapak = b.id_lapak
+    WHERE lf.id_pengguna = ?
+    AND l.status_lapak = 'terverifikasi'
+    ORDER BY l.nama_lapak ASC
+  `;
+
+  // Log query untuk debugging
+  console.log('Query:', query);
+  console.log('Parameters:', [userId]);
+
+  pool.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    // Log results untuk debugging
+    console.log('Query results:', results);
+
+    // Pastikan results adalah array
+    const lapaks = Array.isArray(results) ? results : [];
+
+    res.json({ 
+      success: true, 
+      lapaks: lapaks
+    });
   });
 });
 

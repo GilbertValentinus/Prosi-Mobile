@@ -259,6 +259,7 @@ useEffect(() => {
         <LapakInfo
           key={`lapak-info-${selectedLapak.id_lapak}`}
           lapak={{
+            lapakId: selectedLapak.id_lapak,
             id_lapak: selectedLapak .id_lapak,
             name: selectedLapak.nama_lapak,
             address: selectedLapak.lokasi_lapak,
