@@ -51,7 +51,6 @@ function App() {
         <Route path="/laporUlasan" element={<LaporUlas />} />
         <Route path="/laporUlasan/:id_ulasan" element={<LaporUlas />} />
         <Route path="/profileUser" element={<Profile />} />
-
         <Route path="/navigation" element={<Navigation /> } />
 
       </Routes>

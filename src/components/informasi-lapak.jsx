@@ -93,9 +93,8 @@ const LapakInfo = ({ lapak, onClose }) => {
     }
   };
   const redirectToUlasanPage = (review) => {
-    console.log("Navigating with review:", review); // Check what review is being passed
     if (review?.id_ulasan) {
-      navigate(`/laporUlasan/${review.id_ulasan}`, { state: { review } });
+      navigate(`/laporUlasan/${review.id_ulasan}`, { state: { review,lapak} });
     } else {
       console.error("ID ulasan tidak ditemukan.");
     }
@@ -235,7 +234,6 @@ const LapakInfo = ({ lapak, onClose }) => {
         <h2 className="text-xl font-bold mb-2">Ulasan</h2>
         {uniqueReviews.length > 0 ? (
           uniqueReviews.map((review) => {
-            console.log("Full base64 string: ", review.foto);
             return (
               <div key={review.id_ulasan} className="my-4 space-y-1">
                 <div className="flex gap-2">
@@ -276,7 +274,7 @@ const LapakInfo = ({ lapak, onClose }) => {
                     <img
                       src={review.foto} // Changed from review.ulasan_foto to review.foto
                       alt="Ulasan Foto"
-                      className="w-full max-w-[120px] h-auto object-cover rounded-lg"
+                      className="w-full max-w-[250px] h-auto object-cover rounded-lg"
                     />
                   </div>
                 )}

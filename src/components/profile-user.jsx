@@ -3,38 +3,38 @@ import { useNavigate } from "react-router-dom";
 
 const ProfileUser = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null); // State to hold user data
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error handling
-
-  // Assume the email is passed as a query parameter or retrieved from a session.
-  const userEmail = "john.doe@example.com"; // Replace this with the actual user email
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user data from API
-    fetch(`/api/profile/${userEmail}`)
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/user", {
+          credentials: "include", // Send cookies with request
+        });
+        const data = await response.json();
         if (data.success) {
-          setUser(data.user);
+          setUser(data.user); // Set user data if successful
         } else {
-          setError("User not found");
+          navigate("/login"); // Redirect to login if not authenticated
         }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching user profile:", err);
-        setError("Error fetching profile");
-        setLoading(false);
-      });
-  }, [userEmail]);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        navigate("/login"); // Redirect to login on error
+      } finally {
+        setLoading(false); // Stop loading
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
 
   if (loading) {
-    return <div className="text-white">Loading...</div>;
+    return <div>Loading...</div>; // Show a loading state while fetching
   }
 
-  if (error) {
-    return <div className="text-white">Error: {error}</div>;
+  if (!user) {
+    return <div>User not found</div>; // Optional fallback
   }
 
   return (
@@ -48,26 +48,25 @@ const ProfileUser = () => {
       </div>
 
       {/* Profile Info Section */}
-      {user && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold">Username</h2>
-            <p className="bg-[#4C516D] p-2 rounded-lg">{user.username}</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Full Name</h2>
-            <p className="bg-[#4C516D] p-2 rounded-lg">{user.fullName}</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Email</h2>
-            <p className="bg-[#4C516D] p-2 rounded-lg">{user.email}</p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Phone Number</h2>
-            <p className="bg-[#4C516D] p-2 rounded-lg">{user.phone}</p>
-          </div>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">Username</h2>
+          <p className="bg-[#4C516D] p-2 rounded-lg">{user.username || "-"}</p>
         </div>
-      )}
+        <div>
+          <h2 className="text-lg font-semibold">Full Name</h2>
+          <p className="bg-[#4C516D] p-2 rounded-lg">{user.nama_lengkap || "-"}</p>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Email</h2>
+          <p className="bg-[#4C516D] p-2 rounded-lg">{user.email || "-"}</p>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Phone Number</h2>
+          <p className="bg-[#4C516D] p-2 rounded-lg">{user.nomor_telepon || "-"}</p>
+        </div>
+      </div>
+
 
       {/* Back Button */}
       <button
