@@ -16,6 +16,8 @@ import Searchbar from "./searchbar";
 import DraggableLocationInfo from "./location-info";
 import { mapImages } from "../assets";
 
+
+
 const { clickLocationIcon, currentLocationIcon, shopIcon } = mapImages;
 
 const CurrentLocationIcon = L.icon({
@@ -51,11 +53,9 @@ const fetchAddress = async (lat, lng) => {
     if (response.data) {
       return {
         name: response.data.address.road || "Unknown Road",
-        fullAddress: `${response.data.address.road || ""}, ${
-          response.data.address.suburb || ""
-        }, ${response.data.address.city || ""}, ${
-          response.data.address.state || ""
-        }, ${response.data.address.country || ""}`,
+        fullAddress: `${response.data.address.road || ""}, ${response.data.address.suburb || ""
+          }, ${response.data.address.city || ""}, ${response.data.address.state || ""
+          }, ${response.data.address.country || ""}`,
         plusCode: "N/A",
       };
     }
@@ -138,17 +138,24 @@ function Map() {
   };
   const [lapaks, setLapaks] = useState([]);
 
-
-  useEffect(() => {
-    if (clickedLocation) {
-      fetchAddress(clickedLocation.lat, clickedLocation.lng).then((info) => {
-        setLocationInfo(info);
-        setIsPanelOpen(true);
-      });
-    }
-  }, [clickedLocation]);
-
-
+// Map.jsx
+useEffect(() => {
+  if (clickedLocation) {
+    fetchAddress(clickedLocation.lat, clickedLocation.lng).then((info) => {
+      setLocationInfo(info);
+      setIsPanelOpen(true);
+      localStorage.setItem(
+        'selectedLocation',
+        JSON.stringify({
+          address: info.fullAddress,
+          latitude: clickedLocation.lat, // simpan latitude
+          longitude: clickedLocation.lng // simpan longitude
+        })
+      );
+    });
+  }
+}, [clickedLocation]);
+  
   useEffect(() => {
     axios
       .get("/api/lapak")
@@ -177,8 +184,8 @@ function Map() {
     setSelectedLapak(lapak);
     setIsPanelOpen(false);
   };
-  
-  const handleSelectLocation = (lat, lng, lapakInfo,lapak) => {
+
+  const handleSelectLocation = (lat, lng, lapakInfo, lapak) => {
     setMapCenter([lat, lng]);
     setMapZoom(200);
     handleLapakClick(lapak)
@@ -186,7 +193,6 @@ function Map() {
     //   setSelectedLapak(lapakInfo);
     // }
   };
-
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -231,6 +237,8 @@ function Map() {
         ))}
       </MapContainer>
 
+
+
       {locationInfo && isPanelOpen && (
         <DraggableLocationInfo
           key={`location-info-${clickedLocation?.lat}-${clickedLocation?.lng}`}
@@ -252,13 +260,14 @@ function Map() {
           key={`lapak-info-${selectedLapak.id_lapak}`}
           lapak={{
             lapakId: selectedLapak.id_lapak,
+            id_lapak: selectedLapak .id_lapak,
             name: selectedLapak.nama_lapak,
             address: selectedLapak.lokasi_lapak,
             situs: selectedLapak.situs,
             foto: selectedLapak.foto_lapak,
             ulasan: selectedLapak.ulasan,
-            jam_buka: selectedLapak.jam_buka,
-            jam_tutup: selectedLapak.jam_tutup,
+            jam_buka: selectedLapak.jam_buka, // Tambahkan jam_buka
+            jam_tutup: selectedLapak.jam_tutup, // Tambahkan jam_tutup
           }}
           onClose={() => setSelectedLapak(null)}
         />
@@ -268,3 +277,41 @@ function Map() {
 }
 
 export default Map;
+
+//map default
+// url = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// attribution = '&copy; <a href="https://carto.com/attributions">CartoDB</a>';
+
+// const [position, setPosition] = useState(null);
+
+// useEffect(() => {
+//   if (navigator.geolocation) {
+//     navigator.geolocation.getCurrentPosition(
+//       (pos) => {
+//         const { latitude, longitude } = pos.coords;
+//         setPosition([latitude, longitude]);
+//       },
+//       () => {
+//         console.error("Geolocation is not supported or permission denied");
+//       }
+//     );
+//   }
+// }, []);
+
+// if (!position) {
+//   return <p>Loading your location...</p>;
+// }
+
+// return (
+//   <MapContainer center={position} zoom={13} style={{ height: "80vh", width: "100%" }}>
+//     <TileLayer
+//       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+//       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+//     />
+//     <Marker position={position}>
+//       <Popup>  
+//         You are here.
+//       </Popup>
+//     </Marker>
+//   </MapContainer>
+// );

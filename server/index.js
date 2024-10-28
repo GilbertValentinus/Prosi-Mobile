@@ -8,11 +8,8 @@ import multer from "multer";
 
 const app = express();
 const port = 8080;
-
-
 const storage = multer.memoryStorage(); // This stores the file as a buffer
 const upload = multer({ storage: storage });
-
 
 app.use(cors({
   origin: 'http://localhost:5173', // Change to your frontend origin
@@ -33,6 +30,17 @@ app.use(session({
   }
 }));
 
+// Middleware to check if user is logged in
+function isAuthenticated(req, res, next) {
+  if (req.session.userId) {
+    next(); // Continue if the user is authenticated
+  } else {
+    // Redirect to the login page if not authenticated
+    res.redirect('/login'); // Change this to your actual login route
+  }
+}
+
+
 const pool = mysql.createPool({
   multipleStatements: true,
   user: "root",
@@ -41,40 +49,30 @@ const pool = mysql.createPool({
   host: "127.0.0.1",
 });
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/');
-//   },
-//   filename: (req, file, cb) => {
-//     cb(null, Date.now() + '-' + file.originalname);
-//   }
-// });
-
-// const upload = multer({ storage });
-
 app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    console.log("Received login request:", email, password);
-  
-    const query = "SELECT * FROM pengguna WHERE email = ? AND password = ?";
-    pool.query(query, [email, password], (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      if (results.length > 0) {
-        req.session.userId = results[0].id_pengguna;
+  const { email, password } = req.body;
+  console.log("Received login request:", email, password);
 
-        console.log("User logged in with ID:", req.session.userId);
+  const query = "SELECT * FROM pengguna WHERE email = ? AND password = ?";
+  pool.query(query, [email, password], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (results.length > 0) {
+      req.session.userId = results[0].id_pengguna;
 
-        console.log(results);
+      console.log("User logged in with ID:", req.session.userId);
 
-        res.json({ success: true, message: "Login successful" });
-      } else {
-        res.json({ success: false, message: "Invalid email or password" });
-      }
-    });
+      console.log(results);
+
+      res.json({ success: true, message: "Login successful" });
+    } else {
+      res.json({ success: false, message: "Invalid email or password" });
+    }
   });
+});
+
 
 // Logout route to clear the session
 app.post('/api/logout', (req, res) => {
@@ -107,47 +105,48 @@ app.get('/api/user', (req, res) => {
 });
 
 
-  app.post('/api/signup', (req, res) => {
-    const { username, password, fullName, email, phone } = req.body;
-  
-    // Make sure none of the fields are empty
-    if (!username || !password || !fullName || !email || !phone) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
-    }
-  
-    const checkUserQuery = "SELECT * FROM pengguna WHERE email = ?";
-    const insertUserQuery = `
+
+app.post('/api/signup', (req, res) => {
+  const { username, password, fullName, email, phone } = req.body;
+
+  // Make sure none of the fields are empty
+  if (!username || !password || !fullName || !email || !phone) {
+    return res.status(400).json({ success: false, message: 'All fields are required' });
+  }
+
+  const checkUserQuery = "SELECT * FROM pengguna WHERE email = ?";
+  const insertUserQuery = `
       INSERT INTO pengguna (username, password, nama_lengkap, email, role, nomor_telepon)
       VALUES (?, ?, ?, ?, 'pengguna', ?)
     `;
-  
-    // Check if user already exists
-    pool.query(checkUserQuery, [email], (err, results) => {
+
+  // Check if user already exists
+  pool.query(checkUserQuery, [email], (err, results) => {
+    if (err) {
+      console.error('Database error during user check:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    if (results.length > 0) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    // Insert new user into the database
+    pool.query(insertUserQuery, [username, password, fullName, email, phone], (err, results) => {
       if (err) {
-        console.error('Database error during user check:', err);
-        return res.status(500).json({ success: false, message: 'Database error' });
+        console.error('Database error during user insertion:', err);
+        return res.status(500).json({ success: false, message: 'Failed to register user' });
       }
-      if (results.length > 0) {
-        return res.status(400).json({ success: false, message: 'User already exists' });
-      }
-  
-      // Insert new user into the database
-      pool.query(insertUserQuery, [username, password, fullName, email, phone], (err, results) => {
-        if (err) {
-          console.error('Database error during user insertion:', err);
-          return res.status(500).json({ success: false, message: 'Failed to register user' });
-        }
-  
-        res.json({ success: true, message: 'Signup successful' });
-      });
+
+      res.json({ success: true, message: 'Signup successful' });
     });
   });
+});
 
-  // Add this to your server's index.js file
+// Add this to your server's index.js file
 
 app.get('/api/search', (req, res) => {
   const { query } = req.query;
-  
+
   if (!query) {
     return res.status(400).json({ success: false, message: 'Search query is required' });
   }
@@ -173,23 +172,26 @@ app.get('/api/search', (req, res) => {
     res.json({ success: true, results });
   });
 });
-  
-  
+
+
 app.get('/api/test-db', (req, res) => {
-    pool.query('SELECT 1 + 1 AS result', (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database connection failed' });
-      }
-      res.json({ success: true, message: 'Connected to the database', result: results });
-    });
+  pool.query('SELECT 1 + 1 AS result', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+    res.json({ success: true, message: 'Connected to the database', result: results });
   });
   
   app.post('/api/claim-lapak', upload.single('foto'), (req, res) => {
     const { 
       userId, namaLapak, kategoriLapak, alamat, 
-      telepon, deskripsiLapak
+      telepon, deskripsiLapak, situs, layanan, 
+      latitude, longitude 
     } = req.body;
-    const fotoPath = req.file ? req.file.path : null;
+  
+    const jamBuka = JSON.parse(req.body.jamBuka);
+    const foto = req.file ? req.file.buffer : null; // Simpan file sebagai buffer untuk BLOB
+    const tanggalKlaim = new Date();
   
     if (!userId) {
       return res.status(400).json({ success: false, message: 'User ID is required' });
@@ -197,26 +199,140 @@ app.get('/api/test-db', (req, res) => {
   
     const insertLapakQuery = `
       INSERT INTO lapak (id_pengguna, nama_lapak, kategori_lapak, lokasi_lapak,
-                        nomor_telepon, deskripsi_lapak, foto_lapak)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+                        nomor_telepon, deskripsi_lapak, situs, layanan, 
+                        latitude, longitude, tanggal_pengajuan, foto_lapak)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
   
     pool.query(insertLapakQuery, 
       [userId, namaLapak, kategoriLapak, alamat, 
-       telepon, deskripsiLapak, fotoPath],
+      telepon, deskripsiLapak, situs, layanan, 
+      latitude, longitude, tanggalKlaim, foto], 
       (err, results) => {
         if (err) {
           console.error("Database error:", err);
           return res.status(500).json({ success: false, message: 'Failed to save lapak' });
         }
-        res.json({ success: true, message: 'Lapak saved successfully' });
+  
+        const lapakId = results.insertId;
+  
+        // Insert data jam buka ke tabel 'buka' dan 'hari'
+        const insertBukaQuery = `
+          INSERT INTO buka (id_lapak, id_hari, jam_buka, jam_tutup)
+          VALUES (?, (SELECT id_hari FROM hari WHERE nama_hari = ?), ?, ?)
+        `;
+  
+        const bukaPromises = jamBuka.map(entry => {
+          if (entry.buka) {
+            return new Promise((resolve, reject) => {
+              pool.query(insertBukaQuery, 
+                [lapakId, entry.hari, entry.jamBuka, entry.jamTutup], 
+                (err) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+            });
+          }
+          return Promise.resolve();
+        });
+  
+        Promise.all(bukaPromises)
+          .then(() => {
+            res.json({ success: true, message: 'Lapak and buka times saved successfully' });
+          })
+          .catch(err => {
+            console.error("Error saving buka times:", err);
+            res.status(500).json({ success: false, message: 'Failed to save buka times' });
+          });
       }
     );
   });
+  
 
+  app.post('/api/edit-lapak', upload.single('foto'), (req, res) => {
+    const { 
+      userId, lapakId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan
+    } = req.body;
+
+    console.log('Received lapakId:', lapakId);
+  
+    const jamBuka = JSON.parse(req.body.jamBuka);
+    const fotoPath = req.file ? req.file.buffer : null;
+    const tanggalKlaim = new Date();
+  
+    if (!userId || !lapakId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: !userId ? 'User ID is required' : 'Lapak ID is required' 
+      });
+    }
+  
+    // Tambahkan log untuk memeriksa nilai lapakId
+    console.log('Lapak ID:', lapakId);
+  
+    const insertLapakQuery = `
+      INSERT INTO pembaruan_lapak (
+        id_pengguna, id_lapak, nama_lapak_pembaruan, 
+        kategori_lapak_pembaruan, lokasi_lapak_pembaruan,
+        nomor_telepon_pembaruan, deskripsi_lapak_pembaruan, 
+        situs_pembaruan, layanan_pembaruan, 
+        tanggal_pengajuan_pembaruan, foto_lapak_pembaruan
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+  
+    pool.query(insertLapakQuery, 
+      [userId, lapakId, namaLapak, kategoriLapak, alamat, 
+      telepon, deskripsiLapak, situs, layanan, tanggalKlaim, fotoPath], 
+      (err, results) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ success: false, message: 'Failed to save lapak' });
+        }
+
+        const pembaruanId = results.insertId;
+  
+        // Insert data jam buka ke tabel 'buka' dan 'hari'
+        const insertBukaQuery = `
+          INSERT INTO buka_pembaruan (id_lapak, id_hari, id_pembaruan, jam_buka, jam_tutup)
+          VALUES (?, (SELECT id_hari FROM hari WHERE nama_hari = ?), ?, ?, ?)
+        `;
+
+        const bukaPromises = jamBuka.map(entry => {
+          if (entry.buka) {
+            return new Promise((resolve, reject) => {
+              pool.query(insertBukaQuery, 
+                [lapakId, entry.hari, pembaruanId, entry.jamBuka, entry.jamTutup], 
+                (err) => {
+                  if (err) {
+                    console.error(`Error inserting buka data for ${entry.hari}:`, err); // Tambahkan log untuk error
+                    return reject(err);
+                  }
+                  resolve();
+                }
+              );
+            });
+          }
+          return Promise.resolve();
+        });
+
+        Promise.all(bukaPromises)
+          .then(() => {
+            res.json({ success: true, message: 'Lapak and buka times saved successfully' });
+          })
+          .catch(err => {
+            console.error("Error saving buka times:", err);
+            res.status(500).json({ success: false, message: 'Failed to save buka times' });
+        });
+          }
+      );
+  });
+  
   app.get('/api/lapak', (req, res) => {
     const currentDay = new Date().getDay(); // Hari saat ini (0=Sunday, 1=Monday, ..., 6=Saturday)
-  
+    
     const query = `
       SELECT 
         l.id_lapak, 
@@ -236,60 +352,96 @@ app.get('/api/test-db', (req, res) => {
         p.nama_lengkap AS nama_pengguna
       FROM lapak l
       LEFT JOIN buka b ON l.id_lapak = b.id_lapak
-      LEFT JOIN hari h ON b.id_hari = h.id_hari AND h.id_hari = ? -- Kondisi h.id_hari dipindah ke sini
+      LEFT JOIN hari h ON b.id_hari = h.id_hari AND h.id_hari = ?
       LEFT JOIN ulasan u ON l.id_lapak = u.id_lapak
       LEFT JOIN pengguna p ON u.id_pengguna = p.id_pengguna
       WHERE l.status_lapak = 'terverifikasi'
+      ORDER BY u.tanggal DESC
     `;
-  
-    pool.query(query, [currentDay], (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ success: false, message: 'Database error' });
-      }
-  
-      const lapaks = results.reduce((acc, row) => {
-        const lapak = acc.find(l => l.id_lapak === row.id_lapak);
-        const review = {
-          id_ulasan: row.id_ulasan,
-          rating: row.rating,
-          tanggal: row.tanggal,
-          deskripsi: row.deskripsi,
-          ulasan_foto: row.ulasan_foto,
-          nama_pengguna: row.nama_pengguna,
-        };
-  
-        // Convert foto_lapak (BLOB) to base64 if it exists
-        const foto_lapak_base64 = row.foto_lapak ? Buffer.from(row.foto_lapak).toString('base64') : null;
-  
-        if (lapak) {
-          lapak.ulasan.push(review);
-        } else {
-          acc.push({
-            id_lapak: row.id_lapak,
-            nama_lapak: row.nama_lapak,
-            lokasi_lapak: row.lokasi_lapak,
-            latitude: row.latitude,
-            longitude: row.longitude,
-            situs: row.situs,
-            foto_lapak: foto_lapak_base64 ? `data:image/jpeg;base64,${foto_lapak_base64}` : null,
-            jam_buka: row.jam_buka,
-            jam_tutup: row.jam_tutup,
-            ulasan: row.id_ulasan ? [review] : [], // If ulasan exists, add it to array
-          });
+
+  pool.query(query, [currentDay], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    const lapaks = results.reduce((acc, row) => {
+      // Fungsi helper untuk mengkonversi BLOB ke base64
+      const convertBlobToBase64 = (blob) => {
+        if (!blob) return null;
+        try {
+          const base64 = Buffer.from(blob).toString('base64');
+          return `data:image/jpeg;base64,${base64}`;
+        } catch (error) {
+          console.error('Error converting blob to base64:', error);
+          return null;
         }
-        return acc;
-      }, []);
-  
-      // Jika tidak ada lapak yang buka pada hari ini
-      if (lapaks.length === 0) {
-        return res.json({ success: true, lapaks: [], message: 'Tidak ada lapak yang buka hari ini' });
+      };
+
+      // Konversi foto ulasan
+      const ulasan_foto_base64 = convertBlobToBase64(row.ulasan_foto);
+      
+      // Konversi foto lapak
+      const foto_lapak_base64 = convertBlobToBase64(row.foto_lapak);
+
+      // Buat objek review hanya jika id_ulasan ada
+      const review = row.id_ulasan ? {
+        id_ulasan: row.id_ulasan,
+        rating: row.rating,
+        tanggal: row.tanggal,
+        deskripsi: row.deskripsi,
+        foto: ulasan_foto_base64, // Pastikan nama properti ini adalah 'foto'
+        nama_pengguna: row.nama_pengguna
+      } : null;
+
+      // Cari lapak yang sudah ada
+      const existingLapak = acc.find(l => l.id_lapak === row.id_lapak);
+
+      if (existingLapak) {
+        // Tambahkan review baru ke lapak yang sudah ada (jika review valid)
+        if (review) {
+          // Cek apakah review sudah ada untuk mencegah duplikasi
+          const reviewExists = existingLapak.ulasan.some(u => u.id_ulasan === review.id_ulasan);
+          if (!reviewExists) {
+            existingLapak.ulasan.push(review);
+          }
+        }
+      } else {
+        // Buat lapak baru
+        acc.push({
+          id_lapak: row.id_lapak,
+          nama_lapak: row.nama_lapak,
+          lokasi_lapak: row.lokasi_lapak,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          situs: row.situs,
+          foto_lapak: foto_lapak_base64,
+          jam_buka: row.jam_buka,
+          jam_tutup: row.jam_tutup,
+          ulasan: review ? [review] : []
+        });
       }
-  
-      res.json({ success: true, lapaks });
+      return acc;
+    }, []);
+
+    // Sort ulasan for each lapak by date (newest first)
+    lapaks.forEach(lapak => {
+      lapak.ulasan.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
     });
   });
- 
+      
+    if (lapaks.length === 0) {
+      return res.json({ 
+        success: true, 
+        lapaks: [], 
+        message: 'Tidak ada lapak yang buka hari ini' 
+      });
+    }
+
+    res.json({ success: true, lapaks });
+  });
+});
+
 // Endpoint untuk menambahkan lapak favorit
 app.post('/api/lapak/favorit', (req, res) => {
   const { lapakId } = req.body;
@@ -380,10 +532,6 @@ app.get('/api/lapak/favorite/:userId', (req, res) => {
   });
 });
 
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
 
 app.get('/api/user-ticket', (req, res) => {
   const userId = req.session.userId; // Assuming you have user sessions
@@ -531,4 +679,505 @@ app.get('/api/image/:messageId', (req, res) => {
     }
   );
 });
-      
+
+//=================================================== Vincent
+// Get user profile endpoint
+app.get("/api/profile/:email", (req, res) => {
+  const { email } = req.params;
+
+  const query = "SELECT username, nama_lengkap AS fullName, email, nomor_telepon AS phone FROM pengguna WHERE email = ?";
+
+  pool.query(query, [email], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length > 0) {
+      res.json({ success: true, user: results[0] });
+    } else {
+      res.status(404).json({ success: false, message: "User not found" });
+    }
+  });
+});
+
+// Endpoint to submit a report with photo upload
+app.post('/api/laporLapak', upload.single('foto'), (req, res) => {
+  const { alasan_lapak, id_lapak } = req.body;
+  const userId = req.session.userId; // Get user ID from session
+
+  // Check if all required fields are present
+  if (!id_lapak || !userId || !alasan_lapak || !req.file) {
+    return res.status(400).json({ success: false, message: 'All fields are required, including photo' });
+  }
+
+  // Fetch user data based on userId
+  pool.query(
+    `SELECT * FROM pengguna WHERE id_pengguna = ?`,
+    [userId],
+    (error, results) => {
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      if (!results.length) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      const user = results[0]; // Get the first (and expected) user result
+      console.log(user);
+      // Now you can proceed to insert the report
+      pool.query(
+        `INSERT INTO laporan (id_pengguna, id_lapak, tanggal, status, nomor_telp) 
+         VALUES (?, ?, NOW(), 'pending', ?)`,
+        [user.id_pengguna, id_lapak, user.nomor_telepon],
+        (error, result) => {
+          if (error) {
+            console.error('Error inserting report:', error);
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          const reportId = result.insertId; // Get the ID of the inserted report
+
+          // Handle photo upload
+          const foto = req.file.buffer; // Get the photo buffer
+          // Insert into laporan_lapak with required photo
+          pool.query(
+            `INSERT INTO laporan_lapak (id_laporan, alasan_lapak, foto) 
+             VALUES (?, ?, ?)`,
+            [reportId, alasan_lapak, foto],
+            (error) => {
+              if (error) {
+                console.error('Error inserting attachment:', error);
+                return res.status(500).json({ error: 'Database error' });
+              }
+              res.json({ success: true, message: 'Report submitted successfully with photo' });
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+
+// Endpoint to retrieve reports for a specific lapak
+app.get('/api/laporLapak/:id_lapak', (req, res) => {
+  const id_lapak = req.params.id_lapak; // Get id_lapak from URL parameter
+  console.log(id_lapak);
+  if (isNaN(id_lapak)) {
+    return res.status(400).json({ success: false, message: 'Invalid lapak ID' });
+  }
+
+  // SQL query to fetch reports for the specific lapak
+  const query = `
+    SELECT 
+      l.id_laporan,
+      l.tanggal,
+      l.alasan_lapak,
+      l.foto,
+      p.nama_lengkap AS nama_pengguna
+    FROM laporan l
+    LEFT JOIN pengguna p ON l.id_pengguna = p.id_pengguna
+    WHERE l.id_lapak = ?
+    ORDER BY l.tanggal DESC
+  `;
+
+  // Execute query
+  pool.query(query, [id_lapak], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ success: false, message: 'No reports found' });
+    }
+
+    const reports = results.map(({ id_laporan, tanggal, alasan_lapak, foto, nama_pengguna }) => ({
+      id_laporan,
+      tanggal,
+      alasan_lapak,
+      foto,
+      nama_pengguna,
+    }));
+
+    return res.json({ success: true, reports });
+  });
+});
+
+
+
+
+app.post('/api/review', upload.single('foto'), (req, res) => {
+  console.log("Received request body:", req.body);
+  console.log("Received file:", req.file);
+
+  const { id_lapak, id_pengguna, rating, deskripsi } = req.body;
+
+  // Check if all fields are present
+  if (!id_lapak || !id_pengguna || !rating || !deskripsi || !req.file) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'All fields are required',
+      missing: {
+        id_lapak: !id_lapak,
+        id_pengguna: !id_pengguna,
+        rating: !rating,
+        deskripsi: !deskripsi,
+        foto: !req.file
+      }
+    });
+  }
+
+  const foto = req.file.buffer; // Get the photo buffer
+        
+  const query = `
+    INSERT INTO ulasan (id_lapak, id_pengguna, rating, tanggal, deskripsi, foto) 
+    VALUES (?, ?, ?, NOW(), ?, ?)
+  `;
+
+  pool.query(query, [id_lapak, id_pengguna, rating, deskripsi, foto], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database error', 
+        error: err.sqlMessage || err.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Review berhasil dikirim',
+      reviewId: result.insertId 
+    });
+  });
+  
+  app.get('/api/lapak-summary', (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ success: false, message: 'User not logged in' });
+    }
+  
+    const userId = req.session.userId;
+  
+    const query = `
+      SELECT id_lapak, nama_lapak, lokasi_lapak, status_lapak
+      FROM lapak
+      WHERE id_pengguna = ?
+    `;
+  
+    pool.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+  
+      console.log('Database results:', results); // Log hasil query
+  
+      const lapaks = results.map(row => ({
+        id: row.id_lapak,
+        name: row.nama_lapak,
+        address: row.lokasi_lapak,
+        status: row.status_lapak // Changed from status_lapak to status for consistency
+      }));
+  
+      res.json({ success: true, lapaks });
+    });
+  });
+
+  
+  app.delete('/api/lapak/:id', (req, res) => {
+    const lapakId = req.params.id;
+    const userId = req.session.userId;
+  
+    // Log untuk memastikan ID yang diterima
+    console.log(`Attempting to delete lapak with ID: ${lapakId} for user ID: ${userId}`);
+  
+    pool.getConnection((err, connection) => {
+      if (err) {
+        console.error('Database connection error:', err);
+        return res.status(500).json({ success: false, message: 'Database connection error' });
+      }
+  
+      // Memulai transaksi
+      connection.beginTransaction(err => {
+        if (err) {
+          console.error('Transaction error:', err);
+          connection.release();
+          return res.status(500).json({ success: false, message: 'Transaction error' });
+        }
+  
+        // Array query untuk penghapusan
+        const queries = [
+          `DELETE FROM buka WHERE id_lapak = ?`,
+          `DELETE FROM buka_pembaruan WHERE id_lapak = ?`,
+          `DELETE FROM lapak_favorit WHERE id_lapak = ?`,
+          `DELETE FROM laporan WHERE id_lapak = ?`,
+          `DELETE FROM pembaruan_lapak WHERE id_lapak = ?`,
+          `DELETE FROM ulasan WHERE id_lapak = ?`,
+          `DELETE FROM lapak WHERE id_lapak = ? AND id_pengguna = ?`
+        ];
+  
+        const deletePromises = queries.map((query, index) => {
+          return new Promise((resolve, reject) => {
+            // Menjalankan setiap query penghapusan
+            connection.query(query, [lapakId, userId], (err, results) => {
+              if (err) {
+                console.error(`Error executing query ${index + 1}: ${query}`, err); // Log kesalahan untuk query tertentu
+                return reject(err); // Jika error, reject promise
+              }
+              resolve(results);
+            });
+          });
+        });
+  
+        // Eksekusi semua penghapusan secara bersamaan
+        Promise.all(deletePromises)
+          .then(() => {
+            // Commit transaksi jika semua penghapusan berhasil
+            connection.commit(err => {
+              if (err) {
+                console.error('Transaction commit error:', err);
+                return connection.rollback(() => {
+                  connection.release();
+                  return res.status(500).json({ success: false, message: 'Transaction commit error' });
+                });
+              }
+              connection.release();
+              console.log(`Lapak and related records for ID ${lapakId} deleted successfully.`);
+              res.json({ success: true, message: 'Lapak and related records deleted successfully' });
+            });
+          })
+          .catch(err => {
+            // Rollback jika ada error
+            console.error('Error during deletion:', err);
+            connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, message: 'Failed to delete records', error: err.message });
+            });
+          });
+      });
+    });
+  });
+  
+// Route untuk mengambil daftar semua lapak
+// Endpoint untuk mengambil data lapak berdasarkan lapakId
+app.get('/api/lapak/:lapakId', (req, res) => {
+  const { lapakId } = req.params;
+  console.log(`Mengambil data lapak untuk lapakId: ${lapakId}`); // Logging untuk pengecekan
+
+  // Query untuk mendapatkan data lapak berdasarkan lapakId
+  const getLapakQuery = `
+    SELECT lapak.id_lapak, lapak.nama_lapak, lapak.kategori_lapak, lapak.lokasi_lapak AS alamat,
+           lapak.nomor_telepon AS telepon, lapak.deskripsi_lapak, lapak.situs, lapak.layanan, 
+           lapak.latitude, lapak.longitude, lapak.tanggal_pengajuan, lapak.foto_lapak,
+           GROUP_CONCAT(CONCAT(hari.nama_hari, ':', IFNULL(buka.jam_buka, ''), '-', IFNULL(buka.jam_tutup, ''))
+           ORDER BY hari.id_hari ASC) AS jamBuka
+    FROM lapak
+    LEFT JOIN buka ON lapak.id_lapak = buka.id_lapak
+    LEFT JOIN hari ON buka.id_hari = hari.id_hari
+    WHERE lapak.id_lapak = ?
+    GROUP BY lapak.id_lapak
+  `;
+
+  pool.query(getLapakQuery, [lapakId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ success: false, message: 'Failed to retrieve lapak data' });
+    }
+
+    if (results.length === 0) {
+      console.log("Lapak tidak ditemukan.");
+      return res.status(404).json({ success: false, message: 'Lapak not found' });
+    }
+
+    const lapak = results[0];
+    console.log("Data lapak ditemukan:", lapak); // Logging untuk melihat hasil query
+
+    // Memproses jam buka menjadi array objek yang mudah digunakan di frontend
+    const jamBukaArray = lapak.jamBuka
+      ? lapak.jamBuka.split(',').map(entry => {
+          const [hari, jam] = entry.split(':');
+          const [jamBuka, jamTutup] = jam.split('-');
+          return { hari, buka: Boolean(jamBuka && jamTutup), jamBuka, jamTutup };
+        })
+      : [];
+
+    const responseData = {
+      idLapak: lapak.id_lapak,
+      namaLapak: lapak.nama_lapak,
+      kategoriLapak: lapak.kategori_lapak,
+      alamat: lapak.alamat,
+      telepon: lapak.telepon,
+      deskripsiLapak: lapak.deskripsi_lapak,
+      situs: lapak.situs,
+      layanan: lapak.layanan,
+      latitude: lapak.latitude,
+      longitude: lapak.longitude,
+      tanggalPengajuan: lapak.tanggal_pengajuan,
+      fotoUrl: lapak.foto_lapak,
+      jamBuka: jamBukaArray
+    };
+
+    res.json({ success: true, data: responseData });
+  });
+});
+
+app.get('/api/review/:id_lapak', (req, res) => {
+  const id_lapak = req.params.id_lapak; // Get id_lapak from URL parameter
+
+  if (isNaN(id_lapak)) {
+    return res.status(400).json({ success: false, message: 'Invalid lapak ID' });
+  }
+
+  // SQL query to fetch reviews for the specific lapak
+  const query = `
+      SELECT 
+        u.id_ulasan,
+        u.rating,
+        u.tanggal,
+        u.deskripsi,
+        u.foto AS ulasan_foto,
+        p.nama_lengkap AS nama_pengguna
+      FROM ulasan u
+      LEFT JOIN pengguna p ON u.id_pengguna = p.id_pengguna
+      WHERE u.id_lapak = ?
+      ORDER BY u.tanggal DESC
+    `;
+
+  // Execute query
+  pool.query(query, [id_lapak], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ success: false, message: 'No reviews found' });
+    }
+
+    const reviews = results.map(({ id_ulasan, rating, tanggal, deskripsi, ulasan_foto, nama_pengguna }) => ({
+      id_ulasan,
+      rating,
+      tanggal,
+      deskripsi,
+      ulasan_foto,
+      nama_pengguna,
+    }));
+
+    return res.json({ success: true, reviews });
+  });
+});
+
+// Endpoint to submit a report with photo upload
+app.post('/api/laporUlasan', upload.single('foto'), (req, res) => {
+  const { alasan_lapak, id_lapak } = req.body;
+  const userId = req.session.userId; // Get user ID from session
+
+  // Check if all required fields are present
+  if (!id_lapak || !userId || !alasan_lapak || !req.file) {
+    return res.status(400).json({ success: false, message: 'All fields are required, including photo' });
+  }
+
+  // Fetch user data based on userId
+  pool.query(
+    `SELECT * FROM pengguna WHERE id_pengguna = ?`,
+    [userId],
+    (error, results) => {
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      if (!results.length) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      const user = results[0]; // Get the first (and expected) user result
+      console.log(user);
+      // Now you can proceed to insert the report
+      pool.query(
+        `INSERT INTO laporan (id_pengguna, id_lapak, tanggal, status, nomor_telp) 
+         VALUES (?, ?, NOW(), 'pending', ?)`,
+        [user.id_pengguna, id_lapak, user.nomor_telepon],
+        (error, result) => {
+          if (error) {
+            console.error('Error inserting report:', error);
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          const reportId = result.insertId; // Get the ID of the inserted report
+
+          // Handle photo upload
+          const foto = req.file.buffer; // Get the photo buffer
+          // Insert into laporan_lapak with required photo
+          pool.query(
+            `INSERT INTO laporan_lapak (id_laporan, alasan_lapak, foto) 
+             VALUES (?, ?, ?)`,
+            [reportId, alasan_lapak, foto],
+            (error) => {
+              if (error) {
+                console.error('Error inserting attachment:', error);
+                return res.status(500).json({ error: 'Database error' });
+              }
+              res.json({ success: true, message: 'Report submitted successfully with photo' });
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+
+// Endpoint to retrieve reports for a specific lapak
+app.get('/api/laporUlasan/:id_ulasan', (req, res) => {
+  const id_ulasan = req.params.id_ulasan; // Get id_lapak from URL parameter
+  console.log(id_ulasan);
+  if (isNaN(id_ulasan)) {
+    return res.status(400).json({ success: false, message: 'Invalid lapak ID' });
+  }
+
+  // SQL query to fetch reports for the specific lapak
+  const query = `
+    SELECT 
+      u.id_ulasan,
+      u.tanggal,
+      u.alasan_ulasan,
+      p.nama_lengkap AS nama_pengguna
+    FROM ulasan u
+    LEFT JOIN pengguna p ON u.id_pengguna = p.id_pengguna
+    WHERE u.id_ulasan = ?
+    ORDER BY u.tanggal DESC
+  `;
+
+  // Execute query
+  pool.query(query, [id_ulasan], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ success: false, message: 'No reports found' });
+    }
+
+    const reports = results.map(({ id_ulasan ,tanggal, alasan_ulasan,
+       nama_pengguna }) => ({
+      id_ulasan,
+      tanggal,
+      alasan_ulasan,
+      nama_pengguna,
+    }));
+
+    return res.json({ success: true, reports });
+  });
+});
+
+// ===============vincent
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
+ 

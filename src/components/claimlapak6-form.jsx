@@ -1,118 +1,251 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
-function ClaimForm6() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const navigate = useNavigate();
+function DetailLapak() {
+  const [lapakData, setLapakData] = useState({
+    idLapak: '',
+    namaLapak: '',
+    kategoriLapak: '',
+    alamat: '',
+    latitude: '',
+    longitude: '',
+    telepon: '',
+    deskripsiLapak: '',
+    situs: '',
+    layanan: '',
+    fotoLapak: '',
+    tanggalPengajuan: '',
+    jamBuka: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleFileChange = (e) => {
-    setSelectedFile(URL.createObjectURL(e.target.files[0]));
-  };
+  const { id } = useParams();
 
-  const handleNext = () => {
-    console.log('Foto yang dipilih:', selectedFile);
-    navigate('/');
-  };
+  useEffect(() => {
+    const fetchLapakData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`http://localhost:8080/api/lapak/${id}`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch lapak data');
+        }
 
-  const handleRemovePhoto = () => {
-    setSelectedFile(null);
-  };
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setLapakData(result.data);
+        } else {
+          throw new Error(result.message || 'Failed to fetch lapak data');
+        }
+      } catch (error) {
+        console.error('Error fetching lapak data:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchLapakData();
+    }
+  }, [id]);
+
+  if (isLoading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error: {error}</div>;
+  }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Klaim Lapak</h2>
-      <p style={styles.subtitle}>Tambahkan foto lapak anda</p>
-
-      <div style={styles.photoContainer}>
-        {selectedFile ? (
-          <div style={styles.imageWrapper}>
-            <img src={selectedFile} alt="Lapak" style={styles.image} />
-            <button onClick={handleRemovePhoto} style={styles.removeButton}>X</button>
-          </div>
-        ) : (
-          <label htmlFor="upload-photo" style={styles.uploadButton}>
-            Tambahkan Foto
-          </label>
-        )}
-        <input
-          type="file"
-          id="upload-photo"
-          onChange={handleFileChange}
-          style={styles.fileInput}
-        />
+    <div style={styles.formContainer}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>{lapakData.namaLapak}</h1>
+        <p style={styles.subtitle}>
+          Tanggal Pengajuan: {new Date(lapakData.tanggalPengajuan).toLocaleDateString('id-ID')}
+        </p>
       </div>
 
-      <button onClick={handleNext} style={styles.button}>
-        Lanjutkan
-      </button>
+      <div style={styles.mainContent}>
+        <div style={styles.imageSection}>
+          {lapakData.fotoUrl && (
+            <img 
+              src={`http://localhost:8080/${lapakData.fotoUrl}`} 
+              alt={lapakData.namaLapak} 
+              style={styles.image} 
+            />
+          )}
+        </div>
+
+        <div style={styles.infoSection}>
+          <InfoField label="Kategori" value={lapakData.kategoriLapak} />
+          <InfoField label="Alamat" value={lapakData.alamat} />
+          <InfoField 
+            label="Koordinat Lokasi" 
+            value={`${lapakData.latitude}, ${lapakData.longitude}`} 
+          />
+          <InfoField label="No. Telepon" value={lapakData.telepon} />
+          <InfoField 
+            label="Situs" 
+            value={
+              lapakData.situs ? (
+                <a 
+                  href={lapakData.situs} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  style={styles.link}
+                >
+                  {lapakData.situs}
+                </a>
+              ) : '-'
+            } 
+          />
+          <InfoField label="Layanan" value={lapakData.layanan || '-'} />
+        </div>
+
+        <div style={styles.descriptionSection}>
+          <h2 style={styles.sectionTitle}>Deskripsi Lapak</h2>
+          <div style={styles.description}>
+            {lapakData.deskripsiLapak || 'Tidak ada deskripsi'}
+          </div>
+        </div>
+
+        <div style={styles.operationalSection}>
+          <h2 style={styles.sectionTitle}>Jam Operasional</h2>
+          <div style={styles.scheduleGrid}>
+            {lapakData.jamBuka.map((schedule) => (
+              <div key={schedule.hari} style={styles.scheduleItem}>
+                <span style={styles.dayLabel}>{schedule.hari}</span>
+                <span style={schedule.buka ? styles.openTime : styles.closedText}>
+                  {schedule.buka ? `${schedule.jamBuka} - ${schedule.jamTutup}` : 'Tutup'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
+// Helper component for displaying info fields
+const InfoField = ({ label, value }) => (
+  <div style={styles.infoField}>
+    <span style={styles.label}>{label}</span>
+    <div style={styles.value}>{value}</div>
+  </div>
+);
+
 const styles = {
-  container: {
-    padding: '20px',
-    backgroundColor: '#1A1B29',
-    color: '#FFFFFF',
-    height: '100vh',
+  formContainer: {
+    backgroundColor: '#171D34',
+    padding: '2rem',
+    margin: '2rem auto',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    color: '#ffffff',
+    maxWidth: '1000px',
+  },
+  header: {
+    marginBottom: '2rem',
     textAlign: 'center',
   },
   title: {
-    fontSize: '24px',
-    marginBottom: '10px',
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    color: '#ffffff',
+    margin: '0 0 0.5rem 0',
   },
   subtitle: {
-    fontSize: '16px',
-    marginBottom: '20px',
+    color: '#94A3B8',
+    fontSize: '0.875rem',
   },
-  photoContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: '20px',
+  mainContent: {
+    display: 'grid',
+    gap: '2rem',
   },
-  imageWrapper: {
-    position: 'relative',
+  imageSection: {
     width: '100%',
-    maxWidth: '300px',
+    marginBottom: '2rem',
   },
   image: {
     width: '100%',
-    borderRadius: '10px',
+    height: 'auto',
+    maxHeight: '500px',
+    objectFit: 'cover',
+    borderRadius: '8px',
   },
-  removeButton: {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    backgroundColor: '#FF4D4D',
-    border: 'none',
-    borderRadius: '50%',
-    width: '30px',
-    height: '30px',
-    color: '#FFFFFF',
-    cursor: 'pointer',
+  infoSection: {
+    display: 'grid',
+    gap: '1rem',
   },
-  uploadButton: {
-    padding: '10px',
-    backgroundColor: '#6772E5',
-    color: '#FFFFFF',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    display: 'inline-block',
-    marginBottom: '10px',
+  infoField: {
+    backgroundColor: '#1E293B',
+    padding: '1rem',
+    borderRadius: '8px',
   },
-  fileInput: {
-    display: 'none',
+  label: {
+    display: 'block',
+    color: '#94A3B8',
+    fontSize: '0.875rem',
+    marginBottom: '0.5rem',
   },
-  button: {
-    width: '100%',
-    padding: '10px',
-    backgroundColor: '#6772E5',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+  value: {
+    color: '#ffffff',
+    fontSize: '1rem',
+  },
+  descriptionSection: {
+    marginTop: '2rem',
+  },
+  sectionTitle: {
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: '1rem',
+  },
+  description: {
+    backgroundColor: '#1E293B',
+    padding: '1rem',
+    borderRadius: '8px',
+    lineHeight: '1.5',
+  },
+  operationalSection: {
+    marginTop: '2rem',
+  },
+  scheduleGrid: {
+    display: 'grid',
+    gap: '0.5rem',
+  },
+  scheduleItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+  },
+  dayLabel: {
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  openTime: {
+    color: '#4ADE80',
+  },
+  closedText: {
+    color: '#FF5252',
+  },
+  link: {
+    color: '#60A5FA',
+    textDecoration: 'none',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
   },
 };
 
-export default ClaimForm6;
+export default DetailLapak;
