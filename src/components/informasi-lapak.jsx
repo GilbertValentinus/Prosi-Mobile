@@ -1,8 +1,10 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
-import { Star } from "lucide-react";
+import { Star,Navigation2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { FiMoreHorizontal } from "react-icons/fi"; // Importing three-dot icon from react-icons
+
 
 const { lapak1, lapak2, ig, profile } = lapakImages;
 
@@ -22,16 +24,19 @@ const StarRating = ({ rating }) => {
 };
 
 const LapakInfo = ({ lapak, onClose }) => {
-  const panelRef = useRef(null);
+  const panelRef = React.useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [statusLapak, setStatusLapak] = useState("");
+  const [selectedReview, setSelectedReview] = useState(null);
+  const navigate = useNavigate();
+  const [activeReviewId, setActiveReviewId] = useState(null); // State for the active review ID
+
+
 
   const updateStatus = () => {
     if (lapak.jam_buka && lapak.jam_tutup) {
       const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
-
-      // Convert opening and closing times to minutes
+      const currentTime = now.getHours() * 60 + now.getMinutes();
       const [openHour, openMinute] = lapak.jam_buka.split(":").map(Number);
       const [closeHour, closeMinute] = lapak.jam_tutup.split(":").map(Number);
       const openTime = openHour * 60 + openMinute;
@@ -48,48 +53,75 @@ const LapakInfo = ({ lapak, onClose }) => {
   };
 
   useEffect(() => {
-    updateStatus(); // Initial update
-    const interval = setInterval(updateStatus, 60000); // Update every minute
-
-    return () => clearInterval(interval); // Clean up on component unmount
+    updateStatus();
+    const interval = setInterval(updateStatus, 60000);
+    return () => clearInterval(interval);
   }, [lapak]);
 
-  // Cek apakah perangkat adalah mobile
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768); // Perangkat mobile jika lebar layar <= 768px
+      setIsMobile(window.innerWidth <= 768);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Menghitung rata-rata rating dan total ulasan
-  const totalUlasan = lapak.ulasan.length;
-  const totalRating = lapak.ulasan.reduce(
-    (sum, review) => sum + review.rating,
-    0
-  );
-  const rataRating =
-    totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
 
-    const navigate = useNavigate();
+  // Menghilangkan duplikasi ulasan
+  const uniqueReviews = Array.from(new Set(lapak.ulasan.map(review => review.id_ulasan)))
+    .map(id => lapak.ulasan.find(review => review.id_ulasan === id));
+
+  // Menghitung rata-rata rating dan total ulasan
+  const totalUlasan = uniqueReviews.length;
+  const totalRating = uniqueReviews.reduce((sum, review) => sum + review.rating, 0);
+  const rataRating = totalUlasan > 0 ? (totalRating / totalUlasan).toFixed(1) : 0;
+
+  const redirectToReviewPage = () => {
+    if (lapak?.id_lapak) {
+      navigate(`/reviewLapak/${lapak.id_lapak}`, { state: { lapak } }); // Pass the lapak data in the state
+    } else {
+      console.error("ID lapak tidak ditemukan.");
+    }
+  };
+
+  const redirectToLaporPage = () => {
+    if (lapak?.id_lapak) {
+      navigate(`/laporLapak/${lapak.id_lapak}`, { state: { lapak } }); // Pass the lapak data in the state
+    } else {
+      console.error("ID lapak tidak ditemukan.");
+    }
+  };
+  const redirectToUlasanPage = (review) => {
+    console.log("Navigating with review:", review); // Check what review is being passed
+    if (review?.id_ulasan) {
+      navigate(`/laporUlasan/${review.id_ulasan}`, { state: { review } });
+    } else {
+      console.error("ID ulasan tidak ditemukan.");
+    }
+  };
+
+
+  const handleReportClick = (review) => {
+    setActiveReviewId(activeReviewId === review.id_ulasan ? null : review.id_ulasan);
+  };
 
   return (
+
     <motion.div
       ref={panelRef}
       initial={{ y: "100%" }}
       animate={{ y: "0%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      drag={isMobile ? false : "y"} // Nonaktifkan drag di mobile
+      drag={isMobile ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={0.2}
-      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white px-4 rounded-t-[15px] shadow-lg no-scrollbar "
+      className="fixed bottom-0 left-0 right-0 bg-[#222745] text-white px-4 rounded-t-[15px] shadow-lg no-scrollbar"
       style={{ zIndex: 1000, maxHeight: "80vh", overflowY: "auto" }}
     >
       {/* Sticky Header */}
       <div className="sticky top-0 bg-[#222745] py-4 z-10 w-full">
-        <div className="flex justify-between items-center ">
+        <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">{lapak.name}</h2>
           <button onClick={onClose} className="text-white">
             ×
@@ -157,68 +189,122 @@ const LapakInfo = ({ lapak, onClose }) => {
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
 
+      <div className="my-4">
+        <button
+           onClick={() => navigate('/navigation', { 
+              state: { 
+                destination: {
+                  latitude: lapak.latitude,
+                  longitude: lapak.longitude,
+                  nama_lapak: lapak.name
+                } 
+              }
+        })}
+        className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+        >
+       <Navigation2 size={20} />
+        Directions
+        </button>
+      </div>
+
+
       {/* comment */}
-      <div className="rounded-lg text-white ">
-        <h2 className="text-xl font-bold mb-2">Ulasan</h2>
+      <div className="rounded-lg text-white">
+        <h2 className="text-xl font-bold mb-2">Tambahkan Ulasan</h2>
         <div className="flex items-start w-full gap-4 py-2">
           <img src={profile} className="w-7 h-7 rounded-full" alt="Profile" />
           <div className="w-full">
-            <div className="flex items-center mb-3">
+            <button
+              onClick={redirectToReviewPage}
+              className="bg-500 text-white  rounded-lg">
               <div className="flex mr-2 gap-1">
                 {[...Array(5)].map((_, index) => (
                   <Star key={index} size={24} fill="white" stroke="white" />
                 ))}
               </div>
-            </div>
+            </button>
           </div>
         </div>
         {/* tambahkan komentar */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Tambahkan Komentar"
-            className="w-full bg-[#4C516D] text-white placeholder-gray-400 py-2 px-4 rounded-lg focus:outline-none"
-          />
-        </div>
-      </div>
 
+      </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
+
+      {/* ulasan */}
       <div>
         <h2 className="text-xl font-bold mb-2">Ulasan</h2>
-        {lapak.ulasan.length > 0 ? (
-          lapak.ulasan.map((review) => (
-            <div key={review.id_ulasan} className="my-4 space-y-1">
-              <div className="flex gap-2">
-                <img
-                  src={profile}
-                  className="w-7 h-7 rounded-full"
-                  alt="Profile"
-                />
-                <p className="font-semibold">{review.nama_pengguna}</p>
+        {uniqueReviews.length > 0 ? (
+          uniqueReviews.map((review) => {
+            console.log("Full base64 string: ", review.foto);
+            return (
+              <div key={review.id_ulasan} className="my-4 space-y-1">
+                <div className="flex gap-2">
+                  <img
+                    src={profile}
+                    className="w-7 h-7 rounded-full"
+                    alt="Profile"
+                  />
+                  <p className="font-semibold">{review.nama_pengguna}</p>
+                  <button
+                    className="ml-auto text-gray-500 focus:outline-none"
+                    onClick={() => handleReportClick(review)}
+                  >
+                    <FiMoreHorizontal className="w-6 h-6 cursor-pointer" />
+                  </button>
+                  {activeReviewId === review.id_ulasan && (
+                    <div className="absolute right-0 mt-2 bg-white border border-gray-300 shadow-lg p-2 rounded">
+                      <p
+                        className="cursor-pointer text-red-600 hover:underline"
+                        onClick={() => redirectToUlasanPage(review)}
+                      >
+                        Report
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <StarRating rating={review.rating} />
+                  <p className="text-[12px] my-auto">
+                    {new Date(review.tanggal).toLocaleDateString()}
+                  </p>
+                </div>
+                <p>{review.deskripsi}</p>
+
+                {review.foto && ( // Changed from review.ulasan_foto to review.foto
+                  <div className="flex space-x-2 overflow-x-auto my-4">
+                    <img
+                      src={review.foto} // Changed from review.ulasan_foto to review.foto
+                      alt="Ulasan Foto"
+                      className="w-full max-w-[120px] h-auto object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+                <div className="border-[1px] border-[#AAAABC] my-4"></div>
               </div>
-              <div className="flex gap-2">
-                <StarRating rating={review.rating} />
-                <p className="text-[12px] my-auto">
-                  {new Date(review.tanggal).toLocaleDateString()}
-                </p>
-              </div>
-              <p>{review.deskripsi}</p>
-              {review.ulasan_foto && (
-                <img
-                  src={review.ulasan_foto}
-                  alt="Ulasan Foto"
-                  className="my-2"
-                />
-              )}
-              <div className="border-[1px] border-[#AAAABC] my-4"></div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <p>Tidak ada ulasan</p>
         )}
       </div>
+
+
+
+      <h2 className="text-xl font-bold mb-2">Laporkan Lapak</h2>
+      {/* Laporkan button moved below */}
+      < div className="py-5">
+        <button
+          onClick={redirectToLaporPage}
+          className="text-white bg-red-800 py-1 px-4 rounded-lg"
+        >
+          Laporkan
+        </button>
+      </div>
     </motion.div>
   );
 };
+
+
 
 export default LapakInfo;

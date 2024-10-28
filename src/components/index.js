@@ -15,4 +15,13 @@ export { default as EditLapakForm } from "./editlapak-form";
 export { default as FavoriteList } from "./favorite-list";
 export { default as LapakList } from "./lapak-list";
 export { default as LapakDetailForm } from "./detaillapak-form";
+export { default as PusatBantuan } from "./pusatbantuan";
+//========vincent
+export { default as ReviewLapak } from "./review-lapak";
+export { default as LaporLapak } from "./lapor-lapak";
+export { default as LaporUlasan } from "./lapor-ulasan";
+export { default as ProfileUser } from "./profile-user";
+//==vincent
+export { default as Header } from "./header-navigasi";
+export { default as StartButton} from "./startButton";
 

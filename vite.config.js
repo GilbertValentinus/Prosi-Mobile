@@ -5,12 +5,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    hmr: {
+      overlay: false  // Add this to disable the error overlay
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Your Express server's port
-        changeOrigin: true,              // Necessary for proxying
-        secure: false,                   // Use this if your backend doesn't use HTTPS
-      }
-    }
-  }
-})
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+});

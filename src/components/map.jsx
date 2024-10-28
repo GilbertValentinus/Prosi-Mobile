@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   useMapEvent,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import axios from "axios";
 import LapakInfo from "./informasi-lapak";
+import Searchbar from "./searchbar";
 
 import DraggableLocationInfo from "./location-info";
 import { mapImages } from "../assets";
+
+
 
 const { clickLocationIcon, currentLocationIcon, shopIcon } = mapImages;
 
@@ -49,11 +53,9 @@ const fetchAddress = async (lat, lng) => {
     if (response.data) {
       return {
         name: response.data.address.road || "Unknown Road",
-        fullAddress: `${response.data.address.road || ""}, ${
-          response.data.address.suburb || ""
-        }, ${response.data.address.city || ""}, ${
-          response.data.address.state || ""
-        }, ${response.data.address.country || ""}`,
+        fullAddress: `${response.data.address.road || ""}, ${response.data.address.suburb || ""
+          }, ${response.data.address.city || ""}, ${response.data.address.state || ""
+          }, ${response.data.address.country || ""}`,
         plusCode: "N/A",
       };
     }
@@ -110,12 +112,30 @@ function ClickLocationMarker({ setClickedLocation }) {
   return null;
 }
 
+function MapView({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
 function Map() {
   const defaultPosition = [-6.901179, 107.623272];
   const [clickedLocation, setClickedLocation] = useState(null);
   const [locationInfo, setLocationInfo] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedLapak, setSelectedLapak] = useState(null);
+  const [mapCenter, setMapCenter] = useState(defaultPosition);
+  const [mapZoom, setMapZoom] = useState(13);
+  const mapRef = useRef(null);
+
+  const lapakLocation = {
+    lat: -6.874743208622524,
+    lng: 107.60714037413038,
+    name: "Teman Lama",
+    address: "Jl. Bima No.60, Arjuna, Kec. Cicendo, Kota Bandung, Jawa Barat 40172"
+  };
   const [lapaks, setLapaks] = useState([]);
 
 // Map.jsx
@@ -135,22 +155,24 @@ useEffect(() => {
     });
   }
 }, [clickedLocation]);
-
-
-
+  
   useEffect(() => {
     axios
       .get("/api/lapak")
       .then((response) => {
-        console.log(response.data); // Tambahkan ini untuk memeriksa data
+        console.log("Response:", response.data);
         if (response.data.success) {
+          console.log("Lapaks data:", response.data.lapaks);
           setLapaks(response.data.lapaks);
+        } else {
+          console.error("Failed to fetch lapaks:", response.data.message);
         }
       })
       .catch((error) => {
         console.error("Error fetching lapak data:", error);
       });
   }, []);
+
 
   const closePanel = () => {
     setIsPanelOpen(false);
@@ -160,16 +182,28 @@ useEffect(() => {
 
   const handleLapakClick = (lapak) => {
     setSelectedLapak(lapak);
-    setIsPanelOpen(false); // Menutup panel lokasi jika dibuka
+    setIsPanelOpen(false);
+  };
+
+  const handleSelectLocation = (lat, lng, lapakInfo, lapak) => {
+    setMapCenter([lat, lng]);
+    setMapZoom(200);
+    handleLapakClick(lapak)
+    // if (lapakInfo) {
+    //   setSelectedLapak(lapakInfo);
+    // }
   };
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
+      <Searchbar onSelectLocation={handleSelectLocation} />
       <MapContainer
         center={defaultPosition}
         zoom={13}
         style={{ height: "100%", width: "100%", zIndex: "0" }}
+        ref={mapRef}
       >
+        <MapView center={mapCenter} zoom={mapZoom} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -183,29 +217,31 @@ useEffect(() => {
             icon={ClickLocationIcon}
           >
             <Popup>
-              Clicked Location: <br /> Latitude: {clickedLocation.lat} <br />{" "}
+              Clicked Location: <br /> Latitude: {clickedLocation.lat} <br />
               Longitude: {clickedLocation.lng}
             </Popup>
           </Marker>
         )}
 
-        {/* Marker untuk lapak */}
-        {lapaks.map((lapak) => {
-          return (
-            <Marker
-              key={lapak.id_lapak}
-              position={[lapak.latitude, lapak.longitude]}
-              icon={LapakIcon}
-              eventHandlers={{
-                click: () => handleLapakClick(lapak),
-              }}
-            ></Marker>
-          );
-        })}
+        {lapaks.map((lapak) => (
+          <Marker
+            key={`lapak-marker-${lapak.id_lapak}`}
+            position={[lapak.latitude, lapak.longitude]}
+            icon={LapakIcon}
+            eventHandlers={{
+              click: () => handleLapakClick(lapak),
+            }}
+          >
+            <Popup>{lapak.nama_lapak}</Popup>
+          </Marker>
+        ))}
       </MapContainer>
+
+
 
       {locationInfo && isPanelOpen && (
         <DraggableLocationInfo
+          key={`location-info-${clickedLocation?.lat}-${clickedLocation?.lng}`}
           locationData={{
             name: locationInfo.name,
             fullAddress: locationInfo.fullAddress,
@@ -221,7 +257,9 @@ useEffect(() => {
 
       {selectedLapak && (
         <LapakInfo
+          key={`lapak-info-${selectedLapak.id_lapak}`}
           lapak={{
+            id_lapak: selectedLapak .id_lapak,
             name: selectedLapak.nama_lapak,
             address: selectedLapak.lokasi_lapak,
             situs: selectedLapak.situs,
@@ -229,7 +267,6 @@ useEffect(() => {
             ulasan: selectedLapak.ulasan,
             jam_buka: selectedLapak.jam_buka, // Tambahkan jam_buka
             jam_tutup: selectedLapak.jam_tutup, // Tambahkan jam_tutup
-            
           }}
           onClose={() => setSelectedLapak(null)}
         />
