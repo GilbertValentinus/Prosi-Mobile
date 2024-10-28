@@ -21,4 +21,6 @@ export { default as LaporLapak } from "./lapor-lapak";
 export { default as LaporUlasan } from "./lapor-ulasan";
 export { default as ProfileUser } from "./profile-user";
 //==vincent
+export { default as Header } from "./header-navigasi";
+export { default as StartButton} from "./startButton";
 

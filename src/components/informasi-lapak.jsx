@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { lapakImages } from "../assets";
-import { Star } from "lucide-react";
+import { Star,Navigation2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { FiMoreHorizontal } from "react-icons/fi"; // Importing three-dot icon from react-icons
 
@@ -189,7 +189,26 @@ const LapakInfo = ({ lapak, onClose }) => {
       </div>
       <div className="border-[1px] border-[#AAAABC] my-4"></div>
 
-      {/* Comment Section */}
+      <div className="my-4">
+        <button
+           onClick={() => navigate('/navigation', { 
+              state: { 
+                destination: {
+                  latitude: lapak.latitude,
+                  longitude: lapak.longitude,
+                  nama_lapak: lapak.name
+                } 
+              }
+        })}
+        className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+        >
+       <Navigation2 size={20} />
+        Directions
+        </button>
+      </div>
+
+
+      {/* comment */}
       <div className="rounded-lg text-white">
         <h2 className="text-xl font-bold mb-2">Tambahkan Ulasan</h2>
         <div className="flex items-start w-full gap-4 py-2">
