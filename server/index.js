@@ -892,7 +892,9 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
       SELECT id_lapak, nama_lapak, lokasi_lapak, status_lapak
       FROM lapak
       WHERE id_pengguna = ?
+      AND status_lapak IN ('terverifikasi', 'terblokir', 'menunggu')
     `;
+
   
     pool.query(query, [userId], (err, results) => {
       if (err) {
@@ -918,8 +920,7 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
     const lapakId = req.params.id;
     const userId = req.session.userId;
   
-    // Log untuk memastikan ID yang diterima
-    console.log(`Attempting to delete lapak with ID: ${lapakId} for user ID: ${userId}`);
+    console.log(`Attempting to delete/deactivate lapak with ID: ${lapakId} for user ID: ${userId}`);
   
     pool.getConnection((err, connection) => {
       if (err) {
@@ -927,7 +928,6 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
         return res.status(500).json({ success: false, message: 'Database connection error' });
       }
   
-      // Memulai transaksi
       connection.beginTransaction(err => {
         if (err) {
           console.error('Transaction error:', err);
@@ -935,55 +935,114 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
           return res.status(500).json({ success: false, message: 'Transaction error' });
         }
   
-        // Array query untuk penghapusan
-        const queries = [
-          `DELETE FROM buka WHERE id_lapak = ?`,
-          `DELETE FROM buka_pembaruan WHERE id_lapak = ?`,
-          `DELETE FROM lapak_favorit WHERE id_lapak = ?`,
-          `DELETE FROM laporan WHERE id_lapak = ?`,
-          `DELETE FROM pembaruan_lapak WHERE id_lapak = ?`,
-          `DELETE FROM ulasan WHERE id_lapak = ?`,
-          `DELETE FROM lapak WHERE id_lapak = ? AND id_pengguna = ?`
-        ];
-  
-        const deletePromises = queries.map((query, index) => {
-          return new Promise((resolve, reject) => {
-            // Menjalankan setiap query penghapusan
-            connection.query(query, [lapakId, userId], (err, results) => {
-              if (err) {
-                console.error(`Error executing query ${index + 1}: ${query}`, err); // Log kesalahan untuk query tertentu
-                return reject(err); // Jika error, reject promise
-              }
-              resolve(results);
+        // Memeriksa status lapak terlebih dahulu
+        const checkStatusQuery = `SELECT status_lapak FROM lapak WHERE id_lapak = ? AND id_pengguna = ?`;
+        connection.query(checkStatusQuery, [lapakId, userId], (err, statusResult) => {
+          if (err) {
+            console.error('Error checking lapak status:', err);
+            return connection.rollback(() => {
+              connection.release();
+              return res.status(500).json({ success: false, message: 'Error checking lapak status' });
             });
-          });
-        });
+          }
   
-        // Eksekusi semua penghapusan secara bersamaan
-        Promise.all(deletePromises)
-          .then(() => {
-            // Commit transaksi jika semua penghapusan berhasil
-            connection.commit(err => {
+          if (statusResult.length === 0) {
+            return connection.rollback(() => {
+              connection.release();
+              return res.status(404).json({ success: false, message: 'Lapak tidak ditemukan' });
+            });
+          }
+  
+          const lapakStatus = statusResult[0].status_lapak;
+  
+          // Jika status "menunggu", maka hapus lapak
+          if (lapakStatus === 'menunggu') {
+            const queries = [
+              `DELETE FROM laporan_lapak WHERE id_laporan IN (SELECT id_laporan FROM laporan WHERE id_lapak = ?);`,
+              `DELETE FROM laporan WHERE id_lapak = ?`,
+              `DELETE FROM buka WHERE id_lapak = ?`,
+              `DELETE FROM buka_pembaruan WHERE id_lapak = ?`,
+              `DELETE FROM lapak_favorit WHERE id_lapak = ?`,
+              `DELETE FROM pembaruan_lapak WHERE id_lapak = ?`,
+              `DELETE FROM ulasan WHERE id_lapak = ?`,
+              `DELETE FROM lapak WHERE id_lapak = ? AND id_pengguna = ?`
+            ];
+  
+            const deletePromises = queries.map((query, index) => {
+              return new Promise((resolve, reject) => {
+                const params = query.includes('id_pengguna') ? [lapakId, userId] : [lapakId];
+                connection.query(query, params, (err, results) => {
+                  if (err) {
+                    console.error(`Error executing query ${index + 1}: ${query}`, err);
+                    return reject(err);
+                  }
+                  resolve(results);
+                });
+              });
+            });
+  
+            Promise.all(deletePromises)
+              .then(() => {
+                connection.commit(err => {
+                  if (err) {
+                    console.error('Transaction commit error:', err);
+                    return connection.rollback(() => {
+                      connection.release();
+                      return res.status(500).json({ success: false, message: 'Transaction commit error' });
+                    });
+                  }
+                  connection.release();
+                  console.log(`Lapak and related records for ID ${lapakId} deleted successfully.`);
+                  res.json({ success: true, message: 'Lapak and related records deleted successfully' });
+                });
+              })
+              .catch(err => {
+                console.error('Error during deletion:', err);
+                connection.rollback(() => {
+                  connection.release();
+                  res.status(500).json({ success: false, message: 'Failed to delete records', error: err.message });
+                });
+              });
+          } else if (lapakStatus === 'terverifikasi') {
+            // Jika status "terverifikasi", maka ubah status menjadi "nonaktif"
+            const updateStatusQuery = `UPDATE lapak SET status_lapak = 'nonaktif' WHERE id_lapak = ? AND id_pengguna = ?`;
+            connection.query(updateStatusQuery, [lapakId, userId], (err, updateResult) => {
               if (err) {
-                console.error('Transaction commit error:', err);
+                console.error('Error updating lapak status:', err);
                 return connection.rollback(() => {
                   connection.release();
-                  return res.status(500).json({ success: false, message: 'Transaction commit error' });
+                  return res.status(500).json({ success: false, message: 'Error updating lapak status' });
                 });
               }
-              connection.release();
-              console.log(`Lapak and related records for ID ${lapakId} deleted successfully.`);
-              res.json({ success: true, message: 'Lapak and related records deleted successfully' });
+  
+              if (updateResult.affectedRows === 0) {
+                return connection.rollback(() => {
+                  connection.release();
+                  return res.status(404).json({ success: false, message: 'Lapak tidak ditemukan' });
+                });
+              }
+  
+              connection.commit(err => {
+                if (err) {
+                  console.error('Transaction commit error:', err);
+                  return connection.rollback(() => {
+                    connection.release();
+                    return res.status(500).json({ success: false, message: 'Transaction commit error' });
+                  });
+                }
+                connection.release();
+                console.log(`Lapak with ID ${lapakId} deactivated successfully.`);
+                res.json({ success: true, message: 'Lapak deactivated successfully' });
+              });
             });
-          })
-          .catch(err => {
-            // Rollback jika ada error
-            console.error('Error during deletion:', err);
-            connection.rollback(() => {
+          } else {
+            // Status lapak tidak sesuai, batalkan transaksi
+            return connection.rollback(() => {
               connection.release();
-              res.status(500).json({ success: false, message: 'Failed to delete records', error: err.message });
+              return res.status(400).json({ success: false, message: 'Status lapak tidak valid' });
             });
-          });
+          }
+        });
       });
     });
   });
