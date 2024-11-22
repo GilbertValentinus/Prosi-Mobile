@@ -23,18 +23,47 @@ const capitalize = (string) => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
-export const useNavigation = (mapInstance, userLocation, destinationLocation, routeGeometry) => {
+const DEFAULT_MODE_CONFIGS = {
+  driving: {
+    speed: 40,
+    color: '#4A90E2',
+    icon: '🚗'
+  },
+  motorcycle: {
+    speed: 35,
+    color: '#F5A623',
+    icon: '🏍️'
+  },
+  walking: {
+    speed: 4.5,
+    color: '#7ED321',
+    icon: '🚶'
+  }
+};
+
+export const useNavigation = (
+  mapInstance, 
+  userLocation, 
+  destinationLocation, 
+  routeGeometry, 
+  mode = 'driving', 
+  modeConfigs = DEFAULT_MODE_CONFIGS
+) => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [navigationInfo, setNavigationInfo] = useState(null);
   const [remainingTime, setRemainingTime] = useState(null);
   const [remainingDistance, setRemainingDistance] = useState(null);
-  const watchIdRef = useRef(null);
   const userMarkerRef = useRef(null);
-  const routeLayerRef = useRef(null);
   const activeSegmentRef = useRef(null);
   const simulationInterval = useRef(null);
 
+  // Calculate speed in meters per second based on mode
+  const getSpeedMPS = () => {
+    const configs = modeConfigs || DEFAULT_MODE_CONFIGS;
+    const speedKMH = configs[mode]?.speed || 40; // Default to driving speed
+    return (speedKMH * 1000) / 3600; // Convert km/h to m/s
+  };
   // Function to update active segment based on current position
   const updateActiveSegment = (currentPosition, steps) => {
     if (!steps.length || !mapInstance) return;
@@ -80,6 +109,8 @@ export const useNavigation = (mapInstance, userLocation, destinationLocation, ro
   const simulateMovement = (coordinates) => {
     let currentIndex = 0;
     const totalPoints = coordinates.length;
+    const speedMPS = getSpeedMPS();
+
     
     simulationInterval.current = setInterval(() => {
       if (currentIndex >= totalPoints) {
@@ -102,7 +133,7 @@ export const useNavigation = (mapInstance, userLocation, destinationLocation, ro
       const remainingPoints = coordinates.slice(currentIndex);
       const distanceInMeters = calculateRouteDistance(remainingPoints);
       const distanceInKm = (distanceInMeters / 1000).toFixed(1);
-      const timeInMinutes = Math.ceil(distanceInMeters / 833.33); // Assuming 50km/h speed
+      const timeInMinutes = Math.ceil(distanceInMeters / (speedMPS * 60));
 
       setRemainingDistance(distanceInKm);
       setRemainingTime(timeInMinutes);
@@ -125,6 +156,21 @@ export const useNavigation = (mapInstance, userLocation, destinationLocation, ro
     return distance;
   };
 
+  const createUserMarker = (position) => {
+    const currentConfig = modeConfigs[mode];
+    const userIcon = L.divIcon({
+      html: `<div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+        ${currentConfig.icon}
+      </div>`,
+      className: 'custom-div-icon'
+    });
+
+    return L.marker([position.lat, position.lng], {
+      icon: userIcon,
+      zIndexOffset: 1000
+    });
+  };
+
   // Start navigation with simulation
   const startNavigation = async () => {
     if (!mapInstance || !userLocation || !destinationLocation) return;
@@ -133,8 +179,9 @@ export const useNavigation = (mapInstance, userLocation, destinationLocation, ro
     setNavigationInfo({ status: 'Calculating route...' });
 
     try {
+      const osrmMode = mode === 'motorcycle' ? 'driving' : mode;
       const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&steps=true&geometries=polyline`
+        `https://router.project-osrm.org/route/v1/${osrmMode}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&steps=true&geometries=polyline`
       );
       const data = await response.json();
       const route = data.routes[0];
@@ -148,16 +195,11 @@ export const useNavigation = (mapInstance, userLocation, destinationLocation, ro
       });
 
       // Create or update user marker
-      if (!userMarkerRef.current) {
-        const userIcon = L.divIcon({
-          html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>',
-          className: 'custom-div-icon'
-        });
-        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-          icon: userIcon,
-          zIndexOffset: 1000
-        }).addTo(mapInstance);
+      if (userMarkerRef.current) {
+        mapInstance.removeLayer(userMarkerRef.current);
       }
+      userMarkerRef.current = createUserMarker(userLocation);
+      userMarkerRef.current.addTo(mapInstance);
 
       // Start simulation
       simulateMovement(coordinates);

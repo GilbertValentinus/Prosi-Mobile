@@ -11,10 +11,29 @@ const Navigation = () => {
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState('driving'); // Default mode is driving
+  const [mode, setMode] = useState('driving'); // Default mode
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const routeLayerRef = useRef(null);
+
+  const modeConfigs = {
+    driving: {
+      speed: 40, // km/h
+      color: '#4A90E2',
+      icon: '🚗'
+    },
+    motorcycle: {
+      speed: 35, // km/h
+      color: '#F5A623',
+      icon: '🏍️'
+    },
+    walking: {
+      speed: 4.5, // km/h
+      color: '#7ED321',
+      icon: '🚶'
+    }
+  };
 
   // Fetch destination from `location.state`
   useEffect(() => {
@@ -117,16 +136,24 @@ const Navigation = () => {
     L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
     L.marker([destinationLocation.lat, destinationLocation.lng], { icon: destinationIcon }).addTo(map);
 
-    // Fetch route from OSRM API
-    fetch(`https://router.project-osrm.org/route/v1/${mode}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline`)
+    const osrmMode = mode === 'motorcycle' ? 'driving' : mode;
+
+     // Fetch route from OSRM API
+    fetch(`https://router.project-osrm.org/route/v1/${osrmMode}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline`)
       .then((response) => response.json())
       .then((data) => {
         if (data.routes && data.routes[0]) {
           const route = data.routes[0];
           const coordinates = polyline.decode(route.geometry).map(([lat, lng]) => ({ lat, lng }));
 
-          L.polyline(coordinates, {
-            color: '#8B5CF6',
+          // Remove existing route layer if it exists
+          if (routeLayerRef.current) {
+            map.removeLayer(routeLayerRef.current);
+          }
+
+          // Add new route layer with mode-specific color
+          routeLayerRef.current = L.polyline(coordinates, {
+            color: modeConfigs[mode].color,
             weight: 5,
             opacity: 0.7,
             lineCap: 'round',
@@ -136,9 +163,15 @@ const Navigation = () => {
           const bounds = L.latLngBounds(coordinates);
           map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
 
+          // Calculate ETA based on mode-specific speed
+          const distanceKm = route.distance / 1000;
+          const speedKmh = modeConfigs[mode].speed;
+          const estimatedMinutes = Math.round((distanceKm / speedKmh) * 60);
+
           setRouteInfo({
-            duration: Math.round(route.duration / 60), // Convert seconds to minutes
-            distance: (route.distance / 1000).toFixed(1), // Convert meters to kilometers
+            duration: estimatedMinutes,
+            distance: distanceKm.toFixed(1),
+            mode: mode
           });
         }
       })
@@ -148,7 +181,7 @@ const Navigation = () => {
       });
   }, [userLocation, destinationLocation, mode]);
 
-  return (
+ return (
     <div className="h-screen w-full relative bg-[#222745]">
       <Header
         navigate={navigate}
@@ -159,6 +192,7 @@ const Navigation = () => {
         routeInfo={routeInfo}
         currentMode={mode}
         setMode={setMode}
+        modeConfigs={modeConfigs}
       />
       <div ref={mapRef} className="h-full w-full z-0" />
       <StartButton
@@ -166,6 +200,8 @@ const Navigation = () => {
         mapInstance={mapInstanceRef.current}
         userLocation={userLocation}
         destinationLocation={destinationLocation}
+        mode={mode}
+        modeConfigs={modeConfigs}
       />
     </div>
   );
