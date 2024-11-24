@@ -19,19 +19,22 @@ const Navigation = () => {
 
   const modeConfigs = {
     driving: {
-      speed: 40, // km/h
+      speed: 40,
       color: '#4A90E2',
-      icon: '🚗'
+      icon: '🚗',
+      profile: 'car' // OSRM profile for cars
     },
     motorcycle: {
-      speed: 35, // km/h
+      speed: 35,
       color: '#F5A623',
-      icon: '🏍️'
+      icon: '🏍️',
+      profile: 'bike' // OSRM profile for motorcycles/bikes
     },
     walking: {
-      speed: 4.5, // km/h
+      speed: 4.5,
       color: '#7ED321',
-      icon: '🚶'
+      icon: '🚶',
+      profile: 'foot' // OSRM profile for pedestrians
     }
   };
 
@@ -136,11 +139,11 @@ const Navigation = () => {
     L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
     L.marker([destinationLocation.lat, destinationLocation.lng], { icon: destinationIcon }).addTo(map);
 
-    const osrmMode = mode === 'motorcycle' ? 'driving' : mode;
+    const osrmProfile = modeConfigs[mode].profile;
 
      // Fetch route from OSRM API
-    fetch(`https://router.project-osrm.org/route/v1/${osrmMode}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline`)
-      .then((response) => response.json())
+     fetch(`https://router.project-osrm.org/route/v1/${osrmProfile}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline&alternatives=true`)
+     .then((response) => response.json())
       .then((data) => {
         if (data.routes && data.routes[0]) {
           const route = data.routes[0];

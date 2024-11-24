@@ -179,9 +179,9 @@ export const useNavigation = (
     setNavigationInfo({ status: 'Calculating route...' });
 
     try {
-      const osrmMode = mode === 'motorcycle' ? 'driving' : mode;
+      const osrmProfile = modeConfigs[mode].profile;
       const response = await fetch(
-        `https://router.project-osrm.org/route/v1/${osrmMode}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&steps=true&geometries=polyline`
+        `https://router.project-osrm.org/route/v1/${osrmProfile}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&steps=true&geometries=polyline&alternatives=true`
       );
       const data = await response.json();
       const route = data.routes[0];
