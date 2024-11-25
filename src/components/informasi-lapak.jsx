@@ -161,6 +161,8 @@ const LapakInfo = ({ lapak, onClose }) => {
     setActiveReviewId(activeReviewId === review.id_ulasan ? null : review.id_ulasan);
   };
 
+
+  console.log(lapak.latitude);
   return (
 
     <motion.div
@@ -262,7 +264,9 @@ const LapakInfo = ({ lapak, onClose }) => {
                 destination: {
                   latitude: lapak.latitude,
                   longitude: lapak.longitude,
-                  nama_lapak: lapak.name
+                  nama_lapak: lapak.name,
+                  
+                  
                 } 
               }
         })}
