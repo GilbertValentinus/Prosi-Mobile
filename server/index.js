@@ -1003,7 +1003,7 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
                   res.status(500).json({ success: false, message: 'Failed to delete records', error: err.message });
                 });
               });
-          } else if (lapakStatus === 'terverifikasi') {
+          } else if (lapakStatus !== 'menunggu') {
             // Jika status "terverifikasi", maka ubah status menjadi "nonaktif"
             const updateStatusQuery = `UPDATE lapak SET status_lapak = 'nonaktif' WHERE id_lapak = ? AND id_pengguna = ?`;
             connection.query(updateStatusQuery, [lapakId, userId], (err, updateResult) => {
