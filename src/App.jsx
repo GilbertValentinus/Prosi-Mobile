@@ -16,6 +16,9 @@ import Lapak from "./pages/lapak";
 import LapakDetail from "./pages/detaillapak";
 import Bantuan  from "./pages/bantuan";
 import Pilihsubject  from "./pages/pilihsubject";
+import ForgotPasswordForm from "./pages/forgotPassword";
+import ResetPasswordForm from "./pages/resetPassword";
+
 //vincent
 import Review from "./pages/reviewLapak";
 import Lapor from "./pages/laporLapak";
@@ -53,6 +56,9 @@ function App() {
         <Route path="/laporUlasan/:id_ulasan" element={<LaporUlas />} />
         <Route path="/profileUser" element={<Profile />} />
         <Route path="/navigation" element={<Navigation /> } />
+        <Route path="/forgot-password" element={<ForgotPasswordForm /> } />
+        <Route path="/reset-password/:token" element={<ResetPasswordForm /> } />
+
       </Routes>
     </Router>
   )

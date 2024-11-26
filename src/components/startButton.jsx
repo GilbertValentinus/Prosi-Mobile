@@ -1,7 +1,14 @@
 import React from 'react';
 import { useNavigation } from '../hooks/useNavigation';
 
-const StartButton = ({ routeInfo, mapInstance, userLocation, destinationLocation, routeGeometry }) => {
+const StartButton = ({ 
+  routeInfo, 
+  mapInstance, 
+  userLocation, 
+  destinationLocation, 
+  mode = 'driving', 
+  modeConfigs 
+}) => {
     const {
       isNavigating,
       navigationInfo,
@@ -10,7 +17,14 @@ const StartButton = ({ routeInfo, mapInstance, userLocation, destinationLocation
       remainingDistance,
       startNavigation,
       stopNavigation
-    } = useNavigation(mapInstance, userLocation, destinationLocation, routeGeometry);
+    } = useNavigation(
+      mapInstance, 
+      userLocation, 
+      destinationLocation, 
+      null, 
+      mode, 
+      modeConfigs
+    );
   
     return (
       <div className="absolute bottom-8 left-0 right-0 z-20 flex flex-col items-center px-4 gap-4">
@@ -21,7 +35,7 @@ const StartButton = ({ routeInfo, mapInstance, userLocation, destinationLocation
             </p>
             {remainingTime && remainingDistance && (
               <div className="flex justify-between mt-2 text-sm text-gray-600">
-                <span>🚗 {remainingTime} min</span>
+                <span>{modeConfigs[mode].icon} {remainingTime} min</span>
                 <span>📍 {remainingDistance} km</span>
               </div>
             )}
@@ -41,4 +55,4 @@ const StartButton = ({ routeInfo, mapInstance, userLocation, destinationLocation
     );
   };
   
-  export default StartButton;
+export default StartButton;

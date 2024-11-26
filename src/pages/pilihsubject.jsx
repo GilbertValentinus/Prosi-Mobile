@@ -77,7 +77,7 @@ const TopicSelectionPage = () => {
         onClick={() => navigate('/')}
         size={24}
       />
-      <h1 className="text-3xl mb-6">Pilih Topik Dukungan</h1>
+      <h1 className="text-3xl mb-6">Pilih Topik Bantuan</h1>
       <form onSubmit={handleSubmit} className="w-full max-w-md">
         <select
           value={selectedTopic}
