@@ -962,21 +962,21 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
 
   const { id_lapak, id_pengguna, rating, deskripsi } = req.body;
 
-  // Check if all required fields except foto are present
+  // Validasi input wajib
   if (!id_lapak || !id_pengguna || !rating || !deskripsi) {
     return res.status(400).json({
       success: false,
-      message: 'All required fields except foto are needed',
+      message: 'Semua kolom wajib diisi kecuali foto',
       missing: {
         id_lapak: !id_lapak,
         id_pengguna: !id_pengguna,
         rating: !rating,
-        deskripsi: !deskripsi
-      }
+        deskripsi: !deskripsi,
+      },
     });
   }
 
-  // If foto is provided, use the buffer, otherwise set it to null
+  // Set foto sebagai buffer jika ada, atau null jika tidak ada
   const foto = req.file ? req.file.buffer : null;
 
   const query = `
@@ -984,20 +984,21 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
     VALUES (?, ?, ?, NOW(), ?, ?)
   `;
 
+  // Eksekusi query dengan nilai foto yang dinamis
   pool.query(query, [id_lapak, id_pengguna, rating, deskripsi, foto], (err, result) => {
     if (err) {
       console.error('Database error:', err);
       return res.status(500).json({
         success: false,
         message: 'Database error',
-        error: err.sqlMessage || err.message
+        error: err.sqlMessage || err.message,
       });
     }
 
     res.json({
       success: true,
       message: 'Review berhasil dikirim',
-      reviewId: result.insertId
+      reviewId: result.insertId,
     });
   });
 });

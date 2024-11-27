@@ -70,11 +70,6 @@ const ReviewLapak = () => {
     e.preventDefault();
 
     // Validasi input
-    if (!photoFile) {
-      alert("Silakan upload foto review.");
-      return;
-    }
-
     if (!user) {
       alert("User tidak ditemukan.");
       return;
@@ -101,7 +96,11 @@ const ReviewLapak = () => {
     formData.append("id_pengguna", user.id_pengguna);
     formData.append("rating", rating);
     formData.append("deskripsi", reviewText);
-    formData.append("foto", photoFile);
+
+    // Tambahkan foto hanya jika ada
+    if (photoFile) {
+      formData.append("foto", photoFile);
+    }
 
     try {
       const response = await fetch("http://localhost:8080/api/review", {
@@ -198,7 +197,6 @@ const ReviewLapak = () => {
                 className="hidden"
                 accept="image/*"
                 onChange={handlePhotoUpload}
-                required
               />
               Tambahkan Foto Review
             </label>
@@ -207,8 +205,10 @@ const ReviewLapak = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-3 rounded-lg text-lg"
-          disabled={!photoFile || !reviewText.trim() || rating === 0}
+          className={`w-full py-3 rounded-lg text-lg ${
+            rating === 0 ? "bg-gray-500" : "bg-blue-500 text-white"
+          }`}
+          disabled={rating === 0 || (!photoFile && !reviewText.trim())}
         >
           Kirim Ulasan
         </button>
