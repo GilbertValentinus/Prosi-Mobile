@@ -348,7 +348,7 @@ const EditLapak = () => {
         <div style={styles.inputContainer}>
           <label style={styles.label}>Situs Web</label>
           <input
-            type="url"
+            type="text"
             name="situs"
             value={formData.situs}
             onChange={handleChange}
