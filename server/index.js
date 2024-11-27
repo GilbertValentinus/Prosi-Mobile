@@ -91,24 +91,24 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function testEmailSend() {
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.TEST, // Send to yourself for testing
-      subject: 'Email Configuration Test',
-      text: 'This is a test email to verify SMTP configuration.'
-    });
+// async function testEmailSend() {
+//   try {
+//     const info = await transporter.sendMail({
+//       from: process.env.EMAIL_USER,
+//       to: process.env.TEST, // Send to yourself for testing
+//       subject: 'Email Configuration Test',
+//       text: 'This is a test email to verify SMTP configuration.'
+//     });
 
-    console.log('Test email sent successfully:', info);
-    console.log('Message ID:', info.messageId);
-  } catch (error) {
-    console.error('Error sending test email:', error);
-  }
-}
+//     console.log('Test email sent successfully:', info);
+//     console.log('Message ID:', info.messageId);
+//   } catch (error) {
+//     console.error('Error sending test email:', error);
+//   }
+// }
 
-// Call the test function
-testEmailSend();
+// // Call the test function
+// testEmailSend();
 
 // Forgot password endpoint
 app.post('/api/forgot-password', async (req, res) => {
