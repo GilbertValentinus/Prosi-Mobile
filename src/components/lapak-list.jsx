@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from "lucide-react";
+
 
 function LapakList() {
   const [lapaks, setLapaks] = useState([]);
@@ -11,16 +13,19 @@ function LapakList() {
   useEffect(() => {
     const fetchLapakSummary = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/lapak-summary', {
-          credentials: 'include',
-        });
+        const response = await fetch(
+          "http://localhost:8080/api/lapak-summary",
+          {
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
-          throw new Error('Lapak tidak ditemukan');
+          throw new Error("Lapak tidak ditemukan");
         }
 
         const data = await response.json();
-        console.log('Fetched data:', data);
+        console.log("Fetched data:", data); // Log data yang diterima
 
         if (data.success) {
           setLapaks(data.lapaks);
@@ -28,8 +33,8 @@ function LapakList() {
           setError(data.message);
         }
       } catch (error) {
-        console.error('Error fetching lapak summary:', error);
-        setError('Lapak tidak ditemukan');
+        console.error("Error fetching lapak summary:", error);
+        setError("Lapak tidak ditemukan");
       } finally {
         setLoading(false);
       }
@@ -55,12 +60,12 @@ function LapakList() {
     if (window.confirm('Apakah Anda yakin ingin menghapus lapak ini?')) {
       try {
         const response = await fetch(`http://localhost:8080/api/lapak/${id}`, {
-          method: 'DELETE',
-          credentials: 'include',
+          method: "DELETE",
+          credentials: "include",
         });
 
         if (!response.ok) {
-          throw new Error('Failed to delete lapak');
+          throw new Error("Failed to delete lapak");
         }
 
         setLapaks((prevLapaks) => prevLapaks.filter((lapak) => lapak.id !== id));
@@ -125,7 +130,9 @@ function LapakList() {
             >
               <div>
                 <Link to={`/detaillapak/${lapak.id}`}>
-                  <h2 className="text-[15px] font-semibold mb-1">{lapak.name}</h2>
+                  <h2 className="text-[15px] font-semibold mb-1">
+                    {lapak.name}
+                  </h2>
                   <p className="text-[13px] text-gray-400">{lapak.address}</p>
                   <p
                     className={`text-[13px] ${getStatusClassName(

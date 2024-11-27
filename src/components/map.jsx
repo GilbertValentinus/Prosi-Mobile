@@ -265,6 +265,8 @@ useEffect(() => {
             address: selectedLapak.lokasi_lapak,
             situs: selectedLapak.situs,
             foto: selectedLapak.foto_lapak,
+            latitude: selectedLapak.latitude,
+            longitude: selectedLapak.longitude,
             ulasan: selectedLapak.ulasan,
             jam_buka: selectedLapak.jam_buka, // Tambahkan jam_buka
             jam_tutup: selectedLapak.jam_tutup, // Tambahkan jam_tutup

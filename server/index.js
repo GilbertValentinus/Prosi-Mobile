@@ -4,12 +4,26 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import session from "express-session";
 import multer from "multer";
+import nodemailer from "nodemailer";
+import crypto from "crypto";
+import dotenv from 'dotenv';
+dotenv.config();
+// require('dotenv').config();
 
+
+dotenv.config({ path: './email.env' });
+
+// Immediately after, add console logs to verify
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Password is set' : 'Password is NOT set');
 
 const app = express();
-const port = 8080;
+const port = 8081;
 const storage = multer.memoryStorage(); // This stores the file as a buffer
 const upload = multer({ storage: storage });
+
+// const nodemailer = require('nodemailer');
+// const crypto = require('crypto');
 
 app.use(cors({
   origin: 'http://localhost:5173', // Change to your frontend origin
@@ -50,26 +64,133 @@ const pool = mysql.createPool({
 });
 
 app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-  console.log("Received login request:", email, password);
+  const { identifier, password } = req.body;
 
-  const query = "SELECT * FROM pengguna WHERE email = ? AND password = ?";
-  pool.query(query, [email, password], (err, results) => {
+  const query = "SELECT * FROM pengguna WHERE (email = ? OR username = ?) AND password = ?";
+  pool.query(query, [identifier, identifier, password], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Database error" });
     }
     if (results.length > 0) {
       req.session.userId = results[0].id_pengguna;
-
-      console.log("User logged in with ID:", req.session.userId);
-
-      console.log(results);
-
       res.json({ success: true, message: "Login successful" });
     } else {
-      res.json({ success: false, message: "Invalid email or password" });
+      res.json({ success: false, message: "Invalid credentials" });
     }
+  });
+});
+
+
+const transporter = nodemailer.createTransport({
+  // Configure your email service here
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+async function testEmailSend() {
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.TEST, // Send to yourself for testing
+      subject: 'Email Configuration Test',
+      text: 'This is a test email to verify SMTP configuration.'
+    });
+
+    console.log('Test email sent successfully:', info);
+    console.log('Message ID:', info.messageId);
+  } catch (error) {
+    console.error('Error sending test email:', error);
+  }
+}
+
+// Call the test function
+testEmailSend();
+
+// Forgot password endpoint
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  // Check if email exists
+  const query = "SELECT * FROM pengguna WHERE email = ?";
+  pool.query(query, [email], async (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.json({ message: "If an account exists with this email, you will receive a password reset link." });
+    }
+
+    // Generate reset token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Store token in database
+    const updateQuery = "UPDATE pengguna SET reset_token = ?, reset_token_expires = ? WHERE email = ?";
+    pool.query(updateQuery, [token, expiry, email], async (updateErr) => {
+      if (updateErr) {
+        return res.status(500).json({ message: "Error generating reset token" });
+      }
+
+      // Send email
+      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Password Reset Request',
+        html: `
+          <p>Anda telah meminta untuk mengatur ulang kata sandi Anda.</p>
+          <p>Silakan klik tautan di bawah ini untuk mengatur ulang kata sandi Anda:</p>
+          <a href="${resetLink}">${resetLink}</a>
+          <p>Tautan ini akan kedaluwarsa dalam 1 jam.</p>
+          <p>Jika Anda tidak meminta pengaturan ulang kata sandi, Anda dapat mengabaikan email ini.</p>
+        `
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        res.json({ message: "If an account exists with this email, you will receive a password reset link." });
+      } catch (error) {
+        console.error('Email error:', error);
+        res.status(500).json({ message: "Error sending email" });
+      }
+    });
+  });
+});
+
+// Reset password endpoint
+app.post('/api/reset-password', (req, res) => {
+  const { token, password } = req.body;
+
+  // Verify token and update password
+  const query = "SELECT * FROM pengguna WHERE reset_token = ? AND reset_token_expires > NOW()";
+  pool.query(query, [token], (err, results) => {
+    if (err || results.length === 0) {
+      return res.json({ 
+        success: false, 
+        message: "Invalid or expired reset token" 
+      });
+    }
+
+    // Update password and clear reset token
+    const updateQuery = "UPDATE pengguna SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id_pengguna = ?";
+    pool.query(updateQuery, [password, results[0].id_pengguna], (updateErr) => {
+      if (updateErr) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Error updating password" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Password successfully reset" 
+      });
+    });
   });
 });
 
@@ -841,21 +962,20 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
 
   const { id_lapak, id_pengguna, rating, deskripsi } = req.body;
 
-  // Check if all required fields except foto are present
+  // Validasi input wajib
   if (!id_lapak || !id_pengguna || !rating || !deskripsi) {
     return res.status(400).json({
       success: false,
-      message: 'All required fields except foto are needed',
+      message: 'Semua kolom wajib diisi kecuali foto',
       missing: {
         id_lapak: !id_lapak,
         id_pengguna: !id_pengguna,
         rating: !rating,
-        deskripsi: !deskripsi
-      }
+        deskripsi: !deskripsi,
+      },
     });
   }
-
-  // If foto is provided, use the buffer, otherwise set it to null
+  // Set foto sebagai buffer jika ada, atau null jika tidak ada
   const foto = req.file ? req.file.buffer : null;
 
   const query = `
@@ -863,20 +983,21 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
     VALUES (?, ?, ?, NOW(), ?, ?)
   `;
 
+  // Eksekusi query dengan nilai foto yang dinamis
   pool.query(query, [id_lapak, id_pengguna, rating, deskripsi, foto], (err, result) => {
     if (err) {
       console.error('Database error:', err);
       return res.status(500).json({
         success: false,
         message: 'Database error',
-        error: err.sqlMessage || err.message
+        error: err.sqlMessage || err.message,
       });
     }
 
     res.json({
       success: true,
       message: 'Review berhasil dikirim',
-      reviewId: result.insertId
+      reviewId: result.insertId,
     });
   });
 });

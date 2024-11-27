@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Navigation2 } from 'lucide-react';
 import L from 'leaflet';
-import polyline from '@mapbox/polyline'; // For decoding polyline geometry
+import polyline from '@mapbox/polyline';
 import { Header, StartButton } from "../components/index";
 
 const Navigation = () => {
@@ -12,29 +11,44 @@ const Navigation = () => {
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [error, setError] = useState(null);
+  const [mode, setMode] = useState('driving'); // Default mode
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const routeLayerRef = useRef(null);
 
-  const TEST_USER_LOCATION = {
-    lat: -6.875082494787949,
-    lng: 107.60666831822469
-  };
-  
-  const TEST_DESTINATION = {
-    latitude: -6.89429159,
-    longitude: 107.65526867,
-    nama_lapak: "Sate Kambing"
+  const modeConfigs = {
+    driving: {
+      speed: 40,
+      color: '#4A90E2',
+      icon: '🚗',
+      profile: 'car' // OSRM profile for cars
+    },
+    motorcycle: {
+      speed: 35,
+      color: '#F5A623',
+      icon: '🏍️',
+      profile: 'bike' // OSRM profile for motorcycles/bikes
+    },
+    walking: {
+      speed: 4.5,
+      color: '#7ED321',
+      icon: '🚶',
+      profile: 'foot' // OSRM profile for pedestrians
+    }
   };
 
+  // Fetch destination from `location.state`
   useEffect(() => {
-    setError(null);
-    const destination = TEST_DESTINATION;
-    
+    const destination = location.state?.destination;
+    // destination.latitude = -6.85656970;
+    // destination.longitude = 107.63610491;
+    console.log(destination);
+      // console.log(destination.latitude);
     if (destination?.latitude && destination?.longitude) {
       const lat = parseFloat(destination.latitude);
       const lng = parseFloat(destination.longitude);
-      
+
       if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
         setDestinationLocation({ lat, lng });
       } else {
@@ -43,34 +57,47 @@ const Navigation = () => {
         return;
       }
     } else {
+      // console.log(location.state?.destination?.nama_lapak);
+      // console.log(destination.latitude);
       setError('No destination coordinates provided');
       setLoading(false);
       return;
     }
 
-    setUserLocation(TEST_USER_LOCATION);
     setLoading(false);
   }, [location.state]);
 
+  // Fetch user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setError('Unable to fetch current location');
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by this browser');
+    }
+  }, []);
+
+  // Initialize the map
   useEffect(() => {
     if (!mapInstanceRef.current && mapRef.current) {
       try {
         mapInstanceRef.current = L.map(mapRef.current, {
-          zoomControl: false
-        }).setView([TEST_USER_LOCATION.lat, TEST_USER_LOCATION.lng], 12);
-        
+          zoomControl: false,
+        }).setView([0, 0], 12);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+          attribution: '© OpenStreetMap contributors',
         }).addTo(mapInstanceRef.current);
 
-        L.control.zoom({
-          position: 'topright'
-        }).addTo(mapInstanceRef.current);
-
-        setTimeout(() => {
-          mapInstanceRef.current.invalidateSize();
-        }, 100);
-
+        L.control.zoom({ position: 'topright' }).addTo(mapInstanceRef.current);
       } catch (err) {
         console.error('Error initializing map:', err);
         setError('Failed to initialize map');
@@ -85,98 +112,99 @@ const Navigation = () => {
     };
   }, []);
 
+  // Update map and fetch route
   useEffect(() => {
+    if (!mapInstanceRef.current || !userLocation || !destinationLocation) return;
+
     const map = mapInstanceRef.current;
-    if (!map || !userLocation || !destinationLocation) return;
 
-    try {
-      map.eachLayer((layer) => {
-        if (!(layer instanceof L.TileLayer)) {
-          map.removeLayer(layer);
-        }
-      });
+    // Remove existing layers except tiles
+    map.eachLayer((layer) => {
+      if (!(layer instanceof L.TileLayer)) {
+        map.removeLayer(layer);
+      }
+    });
 
-      const userIcon = L.divIcon({
-        html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>',
-        className: 'custom-div-icon',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      });
+    // Add markers for user and destination
+    const userIcon = L.divIcon({
+      html: '<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>',
+      className: 'custom-div-icon',
+    });
 
-      const destinationIcon = L.divIcon({
-        html: '<div class="w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-lg"></div>',
-        className: 'custom-div-icon',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      });
+    const destinationIcon = L.divIcon({
+      html: '<div class="w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-lg"></div>',
+      className: 'custom-div-icon',
+    });
 
-      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-        .addTo(map)
-        .bindPopup('Your Location');
+    L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+    L.marker([destinationLocation.lat, destinationLocation.lng], { icon: destinationIcon }).addTo(map);
 
-      L.marker([destinationLocation.lat, destinationLocation.lng], { icon: destinationIcon })
-        .addTo(map)
-        .bindPopup(TEST_DESTINATION.nama_lapak);
+    const osrmProfile = modeConfigs[mode].profile;
 
-      fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.routes && data.routes[0]) {
-            const route = data.routes[0];
-            const coordinates = polyline.decode(route.geometry).map(([lat, lng]) => ({ lat, lng }));
-            
-            L.polyline(coordinates, {
-              color: '#8B5CF6',
-              weight: 5,
-              opacity: 0.7,
-              lineCap: 'round',
-              lineJoin: 'round'
-            }).addTo(map);
+     // Fetch route from OSRM API
+     fetch(`https://router.project-osrm.org/route/v1/${osrmProfile}/${userLocation.lng},${userLocation.lat};${destinationLocation.lng},${destinationLocation.lat}?overview=full&geometries=polyline&alternatives=true`)
+     .then((response) => response.json())
+      .then((data) => {
+        if (data.routes && data.routes[0]) {
+          const route = data.routes[0];
+          const coordinates = polyline.decode(route.geometry).map(([lat, lng]) => ({ lat, lng }));
 
-            const bounds = L.latLngBounds(coordinates);
-            setTimeout(() => {
-              map.fitBounds(bounds, {
-                padding: [50, 50],
-                maxZoom: 15
-              });
-              map.invalidateSize();
-            }, 200);
-
-            setRouteInfo({
-              duration: Math.round(route.duration / 60),
-              distance: (route.distance / 1000).toFixed(1)
-            });
+          // Remove existing route layer if it exists
+          if (routeLayerRef.current) {
+            map.removeLayer(routeLayerRef.current);
           }
-        })
-        .catch(error => {
-          console.error('Error fetching route:', error);
-          setError('Unable to calculate route');
-        });
-    } catch (err) {
-      console.error('Error updating map:', err);
-      setError('Error displaying route on map');
-    }
-  }, [userLocation, destinationLocation]);
 
-  return (
+          // Add new route layer with mode-specific color
+          routeLayerRef.current = L.polyline(coordinates, {
+            color: modeConfigs[mode].color,
+            weight: 5,
+            opacity: 0.7,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(map);
+
+          const bounds = L.latLngBounds(coordinates);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+
+          // Calculate ETA based on mode-specific speed
+          const distanceKm = route.distance / 1000;
+          const speedKmh = modeConfigs[mode].speed;
+          const estimatedMinutes = Math.round((distanceKm / speedKmh) * 60);
+
+          setRouteInfo({
+            duration: estimatedMinutes,
+            distance: distanceKm.toFixed(1),
+            mode: mode
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching route:', error);
+        setError('Unable to calculate route');
+      });
+  }, [userLocation, destinationLocation, mode]);
+
+ return (
     <div className="h-screen w-full relative bg-[#222745]">
-      <Header 
-        navigate={navigate} 
-        loading={loading} 
-        userLocation={userLocation} 
-        destinationName={TEST_DESTINATION.nama_lapak} 
-        error={error} 
-        routeInfo={routeInfo} 
+      <Header
+        navigate={navigate}
+        loading={loading}
+        userLocation={userLocation}
+        destinationName={location.state?.destination?.nama_lapak}
+        error={error}
+        routeInfo={routeInfo}
+        currentMode={mode}
+        setMode={setMode}
+        modeConfigs={modeConfigs}
       />
-      {/* Map container with lower z-index */}
       <div ref={mapRef} className="h-full w-full z-0" />
-
-      <StartButton 
+      <StartButton
         routeInfo={routeInfo}
         mapInstance={mapInstanceRef.current}
         userLocation={userLocation}
         destinationLocation={destinationLocation}
-        routeGeometry={routeInfo?.geometry}
+        mode={mode}
+        modeConfigs={modeConfigs}
       />
     </div>
   );
