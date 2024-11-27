@@ -1172,64 +1172,98 @@ app.post('/api/review', upload.single('foto'), (req, res) => {
 // Endpoint untuk mengambil data lapak berdasarkan lapakId
 app.get('/api/lapak/:lapakId', (req, res) => {
   const { lapakId } = req.params;
-  console.log(`Mengambil data lapak untuk lapakId: ${lapakId}`); // Logging untuk pengecekan
+  console.log(`Mengambil data lapak untuk lapakId: ${lapakId}`);
 
-  // Query untuk mendapatkan data lapak berdasarkan lapakId
   const getLapakQuery = `
-    SELECT lapak.id_lapak, lapak.nama_lapak, lapak.kategori_lapak, lapak.lokasi_lapak AS alamat,
-           lapak.nomor_telepon AS telepon, lapak.deskripsi_lapak, lapak.situs, lapak.layanan, 
-           lapak.latitude, lapak.longitude, lapak.tanggal_pengajuan, lapak.foto_lapak,
-           GROUP_CONCAT(CONCAT(hari.nama_hari, ':', IFNULL(buka.jam_buka, ''), '-', IFNULL(buka.jam_tutup, ''))
-           ORDER BY hari.id_hari ASC) AS jamBuka
-    FROM lapak
-    LEFT JOIN buka ON lapak.id_lapak = buka.id_lapak
-    LEFT JOIN hari ON buka.id_hari = hari.id_hari
-    WHERE lapak.id_lapak = ?
-    GROUP BY lapak.id_lapak
+  SELECT 
+      lapak.id_lapak, 
+      lapak.nama_lapak, 
+      lapak.kategori_lapak, 
+      lapak.lokasi_lapak AS alamat, 
+      lapak.nomor_telepon AS telepon, 
+      lapak.deskripsi_lapak, 
+      lapak.situs, 
+      lapak.layanan, 
+      lapak.latitude, 
+      lapak.longitude, 
+      lapak.tanggal_pengajuan, 
+      lapak.foto_lapak, 
+      GROUP_CONCAT(
+          CONCAT(
+              hari.nama_hari, 
+              ':', 
+              IFNULL(buka.jam_buka, ''), 
+              '-', 
+              IFNULL(buka.jam_tutup, '')
+          ) 
+          ORDER BY hari.id_hari ASC
+      ) AS jamBuka 
+  FROM lapak 
+  LEFT JOIN buka ON lapak.id_lapak = buka.id_lapak 
+  LEFT JOIN hari ON buka.id_hari = hari.id_hari 
+  WHERE lapak.id_lapak = ? 
+  GROUP BY lapak.id_lapak
   `;
 
   pool.query(getLapakQuery, [lapakId], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ success: false, message: 'Failed to retrieve lapak data' });
-    }
+      if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ 
+              success: false, 
+              message: 'Failed to retrieve lapak data' 
+          });
+      }
 
-    if (results.length === 0) {
-      console.log("Lapak tidak ditemukan.");
-      return res.status(404).json({ success: false, message: 'Lapak not found' });
-    }
+      if (results.length === 0) {
+          console.log("Lapak tidak ditemukan.");
+          return res.status(404).json({ 
+              success: false, 
+              message: 'Lapak not found' 
+          });
+      }
 
-    const lapak = results[0];
-    console.log("Data lapak ditemukan:", lapak); // Logging untuk melihat hasil query
+      const lapak = results[0];
+      console.log("Data lapak ditemukan:", lapak);
 
-    // Memproses jam buka menjadi array objek yang mudah digunakan di frontend
-    const jamBukaArray = lapak.jamBuka
-      ? lapak.jamBuka.split(',').map(entry => {
+      // Convert foto_lapak blob to base64
+      const fotoBase64 = lapak.foto_lapak 
+          ? `data:image/jpeg;base64,${lapak.foto_lapak.toString('base64')}` 
+          : null;
+
+      const jamBukaArray = lapak.jamBuka ? lapak.jamBuka.split(',').map(entry => {
           const [hari, jam] = entry.split(':');
           const [jamBuka, jamTutup] = jam.split('-');
-          return { hari, buka: Boolean(jamBuka && jamTutup), jamBuka, jamTutup };
-        })
-      : [];
+          return { 
+              hari, 
+              buka: Boolean(jamBuka && jamTutup), 
+              jamBuka, 
+              jamTutup 
+          };
+      }) : [];
 
-    const responseData = {
-      idLapak: lapak.id_lapak,
-      namaLapak: lapak.nama_lapak,
-      kategoriLapak: lapak.kategori_lapak,
-      alamat: lapak.alamat,
-      telepon: lapak.telepon,
-      deskripsiLapak: lapak.deskripsi_lapak,
-      situs: lapak.situs,
-      layanan: lapak.layanan,
-      latitude: lapak.latitude,
-      longitude: lapak.longitude,
-      tanggalPengajuan: lapak.tanggal_pengajuan,
-      fotoUrl: lapak.foto_lapak,
-      jamBuka: jamBukaArray
-    };
+      const responseData = {
+          idLapak: lapak.id_lapak,
+          namaLapak: lapak.nama_lapak,
+          kategoriLapak: lapak.kategori_lapak,
+          alamat: lapak.alamat,
+          telepon: lapak.telepon,
+          deskripsiLapak: lapak.deskripsi_lapak,
+          situs: lapak.situs,
+          layanan: lapak.layanan,
+          latitude: lapak.latitude,
+          longitude: lapak.longitude,
+          tanggalPengajuan: lapak.tanggal_pengajuan,
+          fotoUrl: fotoBase64,
+          jamBuka: jamBukaArray
+      };
 
-    res.json({ success: true, data: responseData });
+      res.json({ 
+          success: true, 
+          data: responseData 
+      });
   });
 });
+
 
 
 app.get('/api/review/:id_lapak', (req, res) => {

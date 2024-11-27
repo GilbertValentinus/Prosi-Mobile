@@ -140,7 +140,7 @@ function DetailLapak() {
         <div style={styles.imageSection}>
           {lapakData.fotoUrl && (
             <img 
-              src={`http://localhost:8080/${lapakData.fotoUrl}`} 
+            src={lapakData.fotoUrl}
               alt={lapakData.namaLapak} 
               style={styles.image} 
             />
@@ -193,7 +193,7 @@ function DetailLapak() {
                         {schedule.jamBuka} - {schedule.jamTutup}
                       </span>
                     ) : (
-                      <span style={styles.closedText}>Tutup</span>
+                      <span style={styles.closedText}>Buka</span>
                     )}
                   </div>
                 </div>
