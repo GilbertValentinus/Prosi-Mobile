@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate untuk navigasi
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 function DetailLapak() {
@@ -16,13 +16,14 @@ function DetailLapak() {
     layanan: '',
     fotoLapak: '',
     tanggalPengajuan: '',
-    jamBuka: []
+    jamBuka: [],
+    status: ''
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const { id } = useParams();
-  const navigate = useNavigate(); // useNavigate hook untuk navigasi
+  const navigate = useNavigate();
 
   const formatTime = (time) => {
     if (!time) return '';
@@ -43,6 +44,30 @@ function DetailLapak() {
     return days[day] || day;
   };
 
+  const handleDelete = async () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus lapak ini?')) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/lapak/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Gagal menghapus lapak');
+        }
+
+        // Navigasi kembali setelah berhasil menghapus
+        navigate(-1);
+        console.log(`Lapak dengan ID ${id} berhasil dihapus.`);
+      } catch (error) {
+        console.error('Error menghapus lapak:', error);
+        setError('Gagal menghapus lapak');
+      }
+    } else {
+      console.log('Penghapusan lapak dibatalkan');
+    }
+  };
+
   useEffect(() => {
     const fetchLapakData = async () => {
       try {
@@ -52,7 +77,7 @@ function DetailLapak() {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to fetch lapak data');
+          throw new Error('Gagal mengambil data lapak');
         }
 
         const result = await response.json();
@@ -75,10 +100,10 @@ function DetailLapak() {
             jamBuka: formattedJamBuka
           });
         } else {
-          throw new Error(result.message || 'Failed to fetch lapak data');
+          throw new Error(result.message || 'Gagal mengambil data lapak');
         }
       } catch (error) {
-        console.error('Error fetching lapak data:', error);
+        console.error('Error mengambil data lapak:', error);
         setError(error.message);
       } finally {
         setIsLoading(false);
@@ -91,7 +116,7 @@ function DetailLapak() {
   }, [id]);
 
   if (isLoading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="loading">Memuat...</div>;
   }
 
   if (error) {
@@ -100,7 +125,6 @@ function DetailLapak() {
 
   return (
     <div style={styles.formContainer}>
-      {/* Tombol kembali */}
       <button onClick={() => navigate(-1)} style={styles.backButton}>
         <ArrowLeft style={styles.arrowIcon} />
       </button>
@@ -169,7 +193,7 @@ function DetailLapak() {
                         {schedule.jamBuka} - {schedule.jamTutup}
                       </span>
                     ) : (
-                      <span style={styles.closedText}>Buka</span>
+                      <span style={styles.closedText}>Tutup</span>
                     )}
                   </div>
                 </div>
@@ -180,6 +204,12 @@ function DetailLapak() {
               </div>
             )}
           </div>
+            <button
+              style={styles.deleteButton}
+              onClick={handleDelete}
+            >
+              Hapus
+            </button>
         </div>
       </div>
     </div>
@@ -351,6 +381,16 @@ const styles = {
     color: '#38BDF8',
     textDecoration: 'none',
   },
+  deleteButton: {
+    marginTop: '10px',
+    backgroundColor: '#DC2626',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '14px',
+  }
 };
 
 export default DetailLapak;
