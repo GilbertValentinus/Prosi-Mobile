@@ -56,11 +56,13 @@ function isAuthenticated(req, res, next) {
 
 
 const pool = mysql.createPool({
+  host: 'https://pretty-geese-hear.loca.lt', // URL dari LocalTunnel
+  port: 3306,                    // Port MySQL
   multipleStatements: true,
   user: "root",
   password: "",
   database: "prosi",
-  host: "127.0.0.1",
+  // host: "127.0.0.1",
 });
 
 app.post('/api/login', (req, res) => {
