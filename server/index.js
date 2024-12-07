@@ -26,7 +26,7 @@ const upload = multer({ storage: storage });
 // const crypto = require('crypto');
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Change to your frontend origin
+  origin: ['http://localhost:5173', 'https://prosi-mobile-kl9c-c722d89cz-otwtajirs-projects.vercel.app'], // Change to your frontend origin
   credentials: true // Allow credentials to be sent
 }));
 
