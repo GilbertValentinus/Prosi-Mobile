@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
 
@@ -8,37 +8,56 @@ function LoginForm() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage('');
-
+  
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          credentials: 'include',
         },
+        credentials: 'include', // Sangat penting
         body: JSON.stringify({ identifier, password }),
       });
-
+  
       const data = await response.json();
-
+      console.log('Login Response:', data); // Tambahkan logging
+  
       if (data.success) {
+        // Panggil check-login setelah login
+        await checkLoginStatus();
         setMessage('Login berhasil!');
         navigate('/');
       } else {
-        setMessage(data.message || 'Email/username atau password salah');
+        setMessage(data.message || 'Login gagal');
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('Login Error:', error);
       setMessage('Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const checkLoginStatus = async () => {
+    try {
+      const response = await fetch('/api/check-login', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      const data = await response.json();
+      console.log('Login Check Response:', data); // Tambahkan logging
+      setIsLoggedIn(data.isLoggedIn);
+    } catch (error) {
+      console.error('Login Check Error:', error);
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-screen bg-[#161A32] text-white p-6">

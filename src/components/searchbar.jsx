@@ -22,6 +22,7 @@ function Searchbar({ onSelectLocation }) {
     const fetchUser = async () => {
       try {
         const response = await fetch("http://localhost:8080/api/user", {
+          method: 'GET',
           credentials: "include",
         });
         const data = await response.json();

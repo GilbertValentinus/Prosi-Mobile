@@ -7,9 +7,18 @@ import multer from "multer";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import dotenv from 'dotenv';
+import SQLiteStore from "connect-sqlite3";
+import sqlite3 from "sqlite3";
 dotenv.config();
 // require('dotenv').config();
 
+const SQLiteSessionStore = SQLiteStore(session);
+const sessionStore = new SQLiteSessionStore({
+  db: 'sessions.db',
+  dir: './', // Direktori penyimpanan file database
+  table: 'sessions',
+  concurrentDB: true
+});
 
 dotenv.config({ path: './email.env' });
 
@@ -25,24 +34,57 @@ const upload = multer({ storage: storage });
 // const nodemailer = require('nodemailer');
 // const crypto = require('crypto');
 
-app.use(cors({
-  origin: 'http://localhost:5173', // Change to your frontend origin
-  credentials: true // Allow credentials to be sent
+
+app.set('trust proxy', 1); 
+
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'fallback_secret', // Gunakan environment variable
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 86400000, // 24 jam
+    secure: process.env.NODE_ENV === 'production', // Hanya secure di production
+    httpOnly: true,
+    sameSite: 'lax', // Lebih fleksibel daripada 'strict'
+    domain: undefined // Sesuaikan dengan domain Anda
+  }
 }));
+
+
+
+// app.use(cors({
+//   // origin: '*',
+//   origin: 'https://localhost:5173',
+//   //  origin: 'https://192.168.18.14:5173',// Change to your frontend origin
+//   credentials: true // Allow credentials to be sent
+// }));
+
+
+app.use(cors({
+  origin: ['https://localhost:5173', 'http://localhost:5173', 'https://192.168.18.14:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', true);
+  next();
+});
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use(session({
-  secret: 'secret', // Replace with a strong secret
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
-    secure: false, // Set to true if using HTTPS
-    httpOnly: true,
-  }
-}));
+
+
+app.use((req, res, next) => {
+  console.log('Session ID:', req.sessionID);
+  console.log('Session Data:', req.session);
+  next();
+});
+
+
 
 // Middleware to check if user is logged in
 function isAuthenticated(req, res, next) {
@@ -72,13 +114,58 @@ app.post('/api/login', (req, res) => {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Database error" });
     }
+
     if (results.length > 0) {
-      req.session.userId = results[0].id_pengguna;
-      res.json({ success: true, message: "Login successful" });
+      // Regenerate session untuk keamanan
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error('Session regenerate error:', err);
+          return res.status(500).json({ error: "Session regeneration failed" });
+        }
+
+        // Simpan user ID di session
+        req.session.userId = results[0].id_pengguna;
+        
+        // Simpan session dengan callback untuk memastikan tersimpan
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('Session save error:', saveErr);
+            return res.status(500).json({ error: "Session save failed" });
+          }
+
+          console.log('Successful login - Session:', {
+            id: req.sessionID,
+            userId: req.session.userId
+          });
+
+          res.json({ 
+            success: true, 
+            message: "Login successful",
+            sessionId: req.sessionID 
+          });
+        });
+      });
     } else {
-      res.json({ success: false, message: "Invalid credentials" });
+      res.status(401).json({ success: false, message: "Invalid credentials" });
     }
   });
+});
+
+
+app.get('/api/check-login', (req, res) => {
+  console.log('Check Login - Session:', {
+    id: req.sessionID,
+    userId: req.session.userId
+  });
+
+  if (req.session.userId) {
+    res.json({ 
+      isLoggedIn: true, 
+      userId: req.session.userId 
+    });
+  } else {
+    res.status(401).json({ isLoggedIn: false });
+  }
 });
 
 
@@ -1483,3 +1570,25 @@ app.get('/api/laporUlasan/:id_ulasan', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+
+// const allowedOrigins = [
+//   'http://localhost:5173', // Untuk akses dari komputer
+//   'http://192.168.250.209:5173', // Untuk akses dari HP
+// ];
+
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true, // Jika Anda menggunakan cookie
+// }));
+
+app.listen(8080, '0.0.0.0', () => {
+  console.log('Server running on http://0.0.0.0:8080');
+});
+
+
