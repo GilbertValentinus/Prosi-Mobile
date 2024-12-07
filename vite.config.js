@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // base: '/my-app/', // Ganti dengan path aplikasi Anda
   server: {
     hmr: {
-      overlay: false  // Add this to disable the error overlay
+      overlay: false,
     },
     proxy: {
       '/api': {
