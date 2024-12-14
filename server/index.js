@@ -77,7 +77,10 @@ const pool = mysql.createPool({
   password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
   database: "railway",
   host: "junction.proxy.rlwy.net",
-  port: 32409
+  port: 32409,
+  authPlugins: {
+    mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
+  }
 });
 
 app.post('/api/login', (req, res) => {
