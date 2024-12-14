@@ -1,5 +1,6 @@
 import express from "express";
 import mysql from "mysql";
+import mysql2 from "mysql";
 import bodyParser from "body-parser";
 import cors from "cors";
 import session from "express-session";
@@ -71,16 +72,16 @@ function isAuthenticated(req, res, next) {
 //   host: "127.0.0.1",
 // });
 
-const pool = mysql.createPool({
+const pool = mysql2.createPool({
   multipleStatements: true,
   user: "root",
   password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
   database: "railway",
   host: "junction.proxy.rlwy.net",
   port: 32409,
-  authPlugins: {
-    mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
-  }
+  // authPlugins: {
+  //   mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
+  // }
 });
 
 app.post('/api/login', (req, res) => {
