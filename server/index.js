@@ -26,7 +26,7 @@ const upload = multer({ storage: storage });
 // const crypto = require('crypto');
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com'], // Change to your frontend origin
+  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com'], // Change to your frontend origin
   credentials: true // Allow credentials to be sent
 }));
 
@@ -55,13 +55,13 @@ function isAuthenticated(req, res, next) {
 }
 
 
-const pool = mysql.createPool({
-  multipleStatements: true,
-  user: "if0_37900790",
-  password: "HEBd2yLv5Gv77mc",
-  database: "if0_37900790_prosi",
-  host: "sql306.infinityfree.com",
-});
+// const pool = mysql.createPool({
+//   multipleStatements: true,
+//   user: "if0_37900790",
+//   password: "HEBd2yLv5Gv77mc",
+//   database: "if0_37900790_prosi",
+//   host: "sql306.infinityfree.com",
+// });
 
 // const pool = mysql.createPool({
 //   multipleStatements: true,
@@ -70,6 +70,15 @@ const pool = mysql.createPool({
 //   database: "prosi",
 //   host: "127.0.0.1",
 // });
+
+const pool = mysql.createPool({
+  multipleStatements: true,
+  user: "root",
+  password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
+  database: "railway",
+  host: "junction.proxy.rlwy.net",
+  port: 32409
+});
 
 app.post('/api/login', (req, res) => {
   const { identifier, password } = req.body;

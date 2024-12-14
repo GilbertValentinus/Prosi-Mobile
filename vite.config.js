@@ -10,9 +10,10 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        // target: 'junction.proxy.rlwy.net:32409',
+        target: 'https://prosi-mobile.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
