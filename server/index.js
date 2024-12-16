@@ -84,6 +84,38 @@ const pool = mysql2.createPool({
   // }
 });
 
+// const pool = mysql2.createPool({
+//   multipleStatements: true,
+//   user: "root",
+//   password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
+//   database: "railway",
+//   host: "mysql.railway.internal",
+//   port: 3306,
+//   // authPlugins: {
+//   //   mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
+//   // }
+// });
+
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    return;
+  }
+  console.log('Connected to MySQL database!');
+  connection.release(); 
+});
+
+
+app.get('/test-db', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 + 1 AS result');
+    res.json({ success: true, result: rows[0] });
+  } catch (error) {
+    console.error('Database test failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/login', (req, res) => {
   const { identifier, password } = req.body;
 
