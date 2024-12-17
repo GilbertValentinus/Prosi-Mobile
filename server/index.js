@@ -16,6 +16,7 @@ dotenv.config({ path: './email.env' });
 
 // Immediately after, add console logs to verify
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_USER:', process.env.DB_HOST);
 console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Password is set' : 'Password is NOT set');
 
 const app = express();
@@ -55,49 +56,15 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-
-// const pool = mysql.createPool({
-//   multipleStatements: true,
-//   user: "if0_37900790",
-//   password: "HEBd2yLv5Gv77mc",
-//   database: "if0_37900790_prosi",
-//   host: "sql306.infinityfree.com",
-// });
-
-// const pool = mysql.createPool({
-//   multipleStatements: true,
-//   user: "root",
-//   password: "",
-//   database: "prosi",
-//   host: "127.0.0.1",
-// });
-
-const pool = mysql2.createPool({
+const pool = mysql.createPool({
   multipleStatements: true,
-  user: "root",
-  password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
-  database: "railway",
-  host: "junction.proxy.rlwy.net",
-  port: 32409,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  // authPlugins: {
-  //   mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
-  // }
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_DATABASE,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT
 });
 
-// const pool = mysql2.createPool({
-//   multipleStatements: true,
-//   user: "root",
-//   password: "XQVSeEksEBJlLgNwPJQjJeoSIGKCFztf",
-//   database: "railway",
-//   host: "mysql.railway.internal",
-//   port: 3306,
-//   // authPlugins: {
-//   //   mysql_native_password: () => require('mysql/lib/protocol/Auth/MySqlNativePassword')
-//   // }
-// });
 
 pool.getConnection((err, connection) => {
   if (err) {
