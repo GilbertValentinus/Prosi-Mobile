@@ -58,7 +58,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: false, // Set to true if using HTTPS
-    // httpOnly: true,
+    httpOnly: true,
   }
 }));
 
@@ -92,15 +92,23 @@ pool.getConnection((err, connection) => {
 });
 
 
-app.get('/test-db', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT 1 + 1 AS result');
-    res.json({ success: true, result: rows[0] });
-  } catch (error) {
-    console.error('Database test failed:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+// app.get('/test-db', async (req, res) => {
+//   try {
+//     const [rows] = await pool.query('SELECT 1 + 1 AS result');
+//     res.json({ success: true, result: rows[0] });
+//   } catch (error) {
+//     console.error('Database test failed:', error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// });
+
+// app.use((req, res, next) => {
+//   console.log('Origin:', req.headers.origin); // Log origin permintaan
+//   console.log('Method:', req.method);        // Log metode HTTP
+//   console.log('Path:', req.path);            // Log path permintaan
+//   next();
+// });
+
 
 app.post('/api/login', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*'); // Tambahkan header CORS

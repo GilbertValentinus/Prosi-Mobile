@@ -53,7 +53,7 @@ const EditLapak = () => {
   // Fetch existing lapak data
   useEffect(() => {
     if (id) {
-      fetch(`http://localhost:8080/api/lapak/${id}`, {
+      fetch(`https://prosi-mobile.onrender.com/api/lapak/${id}`, {
         credentials: 'include',
       })
         .then(response => {
@@ -152,7 +152,7 @@ const EditLapak = () => {
     e.preventDefault();
   
     try {
-      const userResponse = await fetch('http://localhost:8080/api/user', { 
+      const userResponse = await fetch('https://prosi-mobile.onrender.com/api/user', { 
         credentials: 'include' 
       });
       const userData = await userResponse.json();
@@ -195,7 +195,7 @@ const EditLapak = () => {
       
       formDataToSend.append('jamBuka', JSON.stringify(jamBukaData));
   
-      const response = await fetch('http://localhost:8080/api/edit-lapak', {
+      const response = await fetch('https://prosi-mobile.onrender.com/api/edit-lapak', {
         method: 'POST',
         body: formDataToSend,
         credentials: 'include',

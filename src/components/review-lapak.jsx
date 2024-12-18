@@ -20,7 +20,7 @@ const ReviewLapak = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/user", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/user", {
           credentials: "include",
         });
         const data = await response.json();
@@ -103,7 +103,7 @@ const ReviewLapak = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/review", {
+      const response = await fetch("https://prosi-mobile.onrender.com/api/review", {
         method: "POST",
         credentials: "include",
         body: formData, // Kirim sebagai FormData

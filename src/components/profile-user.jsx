@@ -9,7 +9,7 @@ const ProfileUser = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/user", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/user", {
           credentials: "include", // Send cookies with request
         });
         const data = await response.json();

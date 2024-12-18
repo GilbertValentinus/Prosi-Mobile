@@ -37,7 +37,7 @@ const LapakInfo = ({ lapak, onClose }) => {
     try {
       if (isFavorite) {
         // Menghapus dari favorit jika sudah difavoritkan
-        const response = await fetch("http://localhost:8080/api/lapak/favorit", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/lapak/favorit", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
@@ -56,7 +56,7 @@ const LapakInfo = ({ lapak, onClose }) => {
         }
       } else {
         // Menambahkan ke favorit jika belum difavoritkan
-        const response = await fetch("http://localhost:8080/api/lapak/favorit", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/lapak/favorit", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

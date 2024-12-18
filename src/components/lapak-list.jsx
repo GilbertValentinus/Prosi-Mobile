@@ -11,7 +11,7 @@ function LapakList() {
   useEffect(() => {
     const fetchLapakSummary = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/lapak-summary', {
+        const response = await fetch('https://prosi-mobile.onrender.com/api/lapak-summary', {
           credentials: 'include',
         });
 
@@ -54,7 +54,7 @@ function LapakList() {
   const handleDelete = async (id) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus lapak ini?')) {
       try {
-        const response = await fetch(`http://localhost:8080/api/lapak/${id}`, {
+        const response = await fetch(`https://prosi-mobile.onrender.com/api/lapak/${id}`, {
           method: 'DELETE',
           credentials: 'include',
         });

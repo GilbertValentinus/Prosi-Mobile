@@ -95,7 +95,7 @@ function ClaimLapak() {
     e.preventDefault();
   
     try {
-      const userResponse = await fetch('http://localhost:8080/api/user', { credentials: 'include' });
+      const userResponse = await fetch('https://prosi-mobile.onrender.com/api/user', { credentials: 'include' });
       const userData = await userResponse.json();
       const userId = userData?.user?.id_pengguna;
   
@@ -125,7 +125,7 @@ function ClaimLapak() {
         formDataToSend.append('foto', formData.selectedFile);
       }
   
-      const response = await fetch('http://localhost:8080/api/claim-lapak', {
+      const response = await fetch('https://prosi-mobile.onrender.com/api/claim-lapak', {
         method: 'POST',
         body: formDataToSend,
         credentials: 'include',

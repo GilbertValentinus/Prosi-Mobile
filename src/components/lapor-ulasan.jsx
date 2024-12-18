@@ -18,7 +18,7 @@ const LaporUlasanPage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/user", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/user", {
           credentials: "include",
         });
         const data = await response.json();
@@ -47,7 +47,7 @@ const LaporUlasanPage = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/laporUlasan",
+        "https://prosi-mobile.onrender.com/api/laporUlasan",
         {
           alasan_ulasan: description,
           id_ulasan: id_ulasan,

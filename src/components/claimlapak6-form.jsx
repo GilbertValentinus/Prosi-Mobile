@@ -26,7 +26,7 @@ function DetailLapak() {
     const fetchLapakData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`http://localhost:8080/api/lapak/${id}`, {
+        const response = await fetch(`https://prosi-mobile.onrender.com/api/lapak/${id}`, {
           credentials: 'include'
         });
         
@@ -75,7 +75,7 @@ function DetailLapak() {
         <div style={styles.imageSection}>
           {lapakData.fotoUrl && (
             <img 
-              src={`http://localhost:8080/${lapakData.fotoUrl}`} 
+              src={`https://prosi-mobile.onrender.com/${lapakData.fotoUrl}`} 
               alt={lapakData.namaLapak} 
               style={styles.image} 
             />

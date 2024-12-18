@@ -20,7 +20,7 @@ const LaporLapakPage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/user", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/user", {
           credentials: "include",
         });
         const data = await response.json();
@@ -72,7 +72,7 @@ const LaporLapakPage = () => {
     formData.append("foto", photoFile); // Use the stored file
 
     try {
-      const response = await axios.post("http://localhost:8080/api/laporLapak", formData, {
+      const response = await axios.post("https://prosi-mobile.onrender.com/api/laporLapak", formData, {
         headers: {
           "Content-Type": "multipart/form-data"
         },

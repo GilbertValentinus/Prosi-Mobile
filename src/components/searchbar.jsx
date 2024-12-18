@@ -21,7 +21,7 @@ function Searchbar({ onSelectLocation }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/user", {
+        const response = await fetch("https://prosi-mobile.onrender.com/api/user", {
           credentials: "include",
         });
         const data = await response.json();
@@ -53,7 +53,7 @@ function Searchbar({ onSelectLocation }) {
 
   const fetchSearchResults = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/search?query=${encodeURIComponent(searchQuery)}`, {
+      const response = await fetch(`https://prosi-mobile.onrender.com/api/search?query=${encodeURIComponent(searchQuery)}`, {
         credentials: 'include'
       });
       const data = await response.json();
@@ -82,7 +82,7 @@ function Searchbar({ onSelectLocation }) {
   // Logout function
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/logout", {
+      const response = await fetch("https://prosi-mobile.onrender.com/api/logout", {
         method: "POST",
         credentials: "include", // Include cookies
       });

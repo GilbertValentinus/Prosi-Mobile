@@ -158,7 +158,7 @@ useEffect(() => {
   
   useEffect(() => {
     axios
-      .get("/api/lapak")
+      .get("https://prosi-mobile.onrender.com/api/lapak")
       .then((response) => {
         console.log("Response:", response.data);
         if (response.data.success) {
