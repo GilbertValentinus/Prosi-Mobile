@@ -28,9 +28,25 @@ const upload = multer({ storage: storage });
 // const crypto = require('crypto');
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com'], // Change to your frontend origin
+  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com'], 
   credentials: true // Allow credentials to be sent
 }));
+
+// app.use((req, res, next) => {
+//   res.header('Access-Control-Allow-Origin', 'http://localhost:5173','http://napak.wuaze.com'); // Tetapkan origin spesifik
+//   res.header('Access-Control-Allow-Credentials', 'true'); // Izinkan kredensial
+//   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   next();
+// });k
+
+
+// app.use(cors({
+//   origin: '*', // Mengizinkan semua origin
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Izinkan semua metode HTTP
+//   allowedHeaders: ['Content-Type', 'Authorization'], // Izinkan header yang diperlukan
+//   credentials: false, // Tidak mengharuskan pengiriman kredensial
+// }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -42,7 +58,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: false, // Set to true if using HTTPS
-    httpOnly: true,
+    // httpOnly: true,
   }
 }));
 
@@ -56,7 +72,7 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-const pool = mysql.createPool({
+const pool = mysql2.createPool({
   multipleStatements: true,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
@@ -87,6 +103,7 @@ app.get('/test-db', async (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*'); // Tambahkan header CORS
   const { identifier, password } = req.body;
 
   const query = "SELECT * FROM pengguna WHERE (email = ? OR username = ?) AND password = ?";
