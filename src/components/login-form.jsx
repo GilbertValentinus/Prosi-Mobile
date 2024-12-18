@@ -18,9 +18,9 @@ function LoginForm() {
       const response = await fetch('https://prosi-mobile.onrender.com/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          credentials: 'include',
+          'Content-Type': 'application/json',  
         },
+        credentials: 'include',
         body: JSON.stringify({ identifier, password }),
       });
 

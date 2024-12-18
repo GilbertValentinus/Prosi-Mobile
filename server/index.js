@@ -28,9 +28,14 @@ const upload = multer({ storage: storage });
 // const crypto = require('crypto');
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com'], 
+  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com','https://prosi.galileobimbel.com'], 
   credentials: true // Allow credentials to be sent
 }));
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // Trust the reverse proxy
+}
+
 
 // app.use((req, res, next) => {
 //   res.header('Access-Control-Allow-Origin', 'http://localhost:5173','http://napak.wuaze.com'); // Tetapkan origin spesifik
@@ -58,7 +63,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: false, // Set to true if using HTTPS
-    httpOnly: true,
+    sameSite: 'none',
   }
 }));
 
