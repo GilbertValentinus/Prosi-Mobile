@@ -28,9 +28,27 @@ const upload = multer({ storage: storage });
 // const crypto = require('crypto');
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi-mobile.onrender.com','https://prosi.galileobimbel.com'], 
+  origin: ['http://localhost:5173', 'http://prosi2lapak.wuaze.com','http://napak.wuaze.com','https://prosi.galileobimbel.com'], 
   credentials: true // Allow credentials to be sent
 }));
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com'); // Izinkan domain frontend Anda
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Izinkan metode HTTP
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Izinkan header yang diperlukan
+  res.setHeader('Access-Control-Allow-Credentials', 'true'); // Izinkan pengiriman cookie jika diperlukan
+  next();
+});
+
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.status(204).end(); // Tidak ada konten
+});
+
+
 
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1); // Trust the reverse proxy
@@ -62,7 +80,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
-    secure: false, // Set to true if using HTTPS
+    secure: true, // Set to true if using HTTPS
     sameSite: 'none',
   }
 }));
