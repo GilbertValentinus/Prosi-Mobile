@@ -32,21 +32,21 @@ app.use(cors({
   credentials: true // Allow credentials to be sent
 }));
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com'); // Izinkan domain frontend Anda
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Izinkan metode HTTP
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Izinkan header yang diperlukan
-  res.setHeader('Access-Control-Allow-Credentials', 'true'); // Izinkan pengiriman cookie jika diperlukan
-  next();
-});
+// app.use((req, res, next) => {
+//   res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com'); // Izinkan domain frontend Anda
+//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Izinkan metode HTTP
+//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Izinkan header yang diperlukan
+//   res.setHeader('Access-Control-Allow-Credentials', 'true'); // Izinkan pengiriman cookie jika diperlukan
+//   next();
+// });
 
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.status(204).end(); // Tidak ada konten
-});
+// app.options('*', (req, res) => {
+//   res.setHeader('Access-Control-Allow-Origin', 'https://prosi.galileobimbel.com');
+//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   res.setHeader('Access-Control-Allow-Credentials', 'true');
+//   res.status(204).end(); // Tidak ada konten
+// });
 
 
 
@@ -134,7 +134,7 @@ pool.getConnection((err, connection) => {
 
 
 app.post('/api/login', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Tambahkan header CORS
+  // res.header('Access-Control-Allow-Origin', '*'); // Tambahkan header CORS
   const { identifier, password } = req.body;
 
   const query = "SELECT * FROM pengguna WHERE (email = ? OR username = ?) AND password = ?";
