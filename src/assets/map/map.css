@@ -1,0 +1,11 @@
+.custom-label {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+    pointer-events: none; /* Agar tidak mengganggu interaksi */
+    color: #007BFF; /* Contoh warna, bisa disesuaikan */
+    font-weight: bold;
+    font-size: 14px; /* Ukuran font */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Efek bayangan */
+  }
+  

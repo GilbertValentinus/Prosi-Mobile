@@ -155,10 +155,12 @@ function Map() {
   const [locationInfo, setLocationInfo] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedLapak, setSelectedLapak] = useState(null);
-  const [mapCenter, setMapCenter] = useState(defaultPosition);
+  const [mapCenter, setMapCenter] = useState(null);
   const [mapZoom, setMapZoom] = useState(13);
   const [zoomLevel, setZoomLevel] = useState(13);
   const [lapaks, setLapaks] = useState([]);
+  const [userPosition, setUserPosition] = useState(null);
+
 
   useEffect(() => {
     const styleTag = document.createElement('style');
@@ -167,6 +169,27 @@ function Map() {
     return () => {
       document.head.removeChild(styleTag);
     };
+  }, []);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const position = [latitude, longitude];
+          setUserPosition(position);
+          setMapCenter(position);
+        },
+        (err) => {
+          console.error(err);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -228,8 +251,8 @@ function Map() {
     <div className="relative h-screen w-full overflow-hidden">
       <Searchbar onSelectLocation={handleSelectLocation} />
       <MapContainer
-        center={defaultPosition}
-        zoom={13}
+        center={mapCenter}
+        zoom={mapzo}
         style={{ height: "100%", width: "100%", zIndex: "0" }}
       >
         <MapView center={mapCenter} zoom={mapZoom} />
