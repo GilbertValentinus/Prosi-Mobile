@@ -81,7 +81,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: true, // Set to true if using HTTPS
-    sameSite: 'lax',
+    sameSite: 'none',
   }
 }));
 
