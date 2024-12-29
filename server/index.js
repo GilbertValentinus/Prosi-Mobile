@@ -534,7 +534,7 @@ app.get('/api/lapak', (req, res) => {
       SELECT 
         l.id_lapak, 
         l.nama_lapak, 
-        
+        l.lokasi_lapak, 
         l.latitude, 
         l.longitude, 
         l.situs, 
