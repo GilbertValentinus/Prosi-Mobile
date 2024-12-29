@@ -621,6 +621,7 @@ app.get('/api/lapak', (req, res) => {
                         foto_lapak: foto_lapak_base64,
                         jam_buka: row.jam_buka,
                         jam_tutup: row.jam_tutup,
+                        kategori_lapak: row.kategori_lapak,
                         ulasan: review ? [review] : []
                     });
                 }

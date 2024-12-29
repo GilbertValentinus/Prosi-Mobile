@@ -175,6 +175,12 @@ useEffect(() => {
   }, []);
 
 
+  const categoryColors = {
+    17 : "#007BFF", // Warna biru untuk kategori cafe
+    warung: "#28A745", // Warna hijau untuk kategori warung
+    "17": "#FFC107", // Warna oranye untuk kategori kaki lima
+  };
+
   const closePanel = () => {
     setIsPanelOpen(false);
     setClickedLocation(null);
@@ -224,11 +230,13 @@ useEffect(() => {
           </Marker>
         )}
 
-        const categoryColors = {{
+        {/* const categoryColors = {{
         cafe: "#007BFF", // Warna biru untuk kategori cafe
-        warung : "#28A745", // Warna hijau untuk kategori warung
+        "warung" : "#28A745", // Warna hijau untuk kategori warung
         "kaki lima": "#FFC107", // Warna oranye untuk kategori kaki lima
-         }};
+         }}; */}
+
+
 
 {lapaks.map((lapak) => (
   <Marker
@@ -243,7 +251,8 @@ useEffect(() => {
       <span
         style={{
           color: "#fff",
-          backgroundColor: categoryColors[lapak.kategori_lapak.toLowerCase()] || "#000",
+          // backgroundColor: categoryColors[lapak.kategori_lapak.toLowerCase()] || "#000",
+          backgroundColor: categoryColors[lapak.id_lapak] || "#000",
           padding: "5px 10px",
           borderRadius: "5px",
           fontWeight: "bold",
