@@ -16,6 +16,16 @@ function SignupForm() {
   const handleSignup = async (e) => {
     e.preventDefault();
 
+    if (password.length < 8) {
+      setMessage("Password minimal 8 karakter");
+      return;
+    }
+
+    if (phone.length < 10) {
+      setMessage("Nomor telepon harus terdiri dari minimal 10 angka");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setMessage("Passwords do not match!");
       return;

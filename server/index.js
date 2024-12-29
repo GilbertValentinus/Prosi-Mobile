@@ -80,7 +80,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
-    secure: true, // Set to true if using HTTPS
+    secure: false, // Set to true if using HTTPS
     sameSite: 'lax',
   }
 }));
@@ -208,7 +208,7 @@ app.post('/api/forgot-password', async (req, res) => {
       }
 
       // Send email
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+      const resetLink = `https://prosi.galileobimbel.com/reset-password/${token}`;
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
@@ -538,6 +538,7 @@ app.get('/api/lapak', (req, res) => {
         l.latitude, 
         l.longitude, 
         l.situs, 
+        l.kategori_lapak
         l.foto_lapak,
         b.jam_buka,
         b.jam_tutup,

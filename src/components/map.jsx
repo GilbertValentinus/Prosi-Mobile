@@ -4,6 +4,7 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Tooltip,
   useMapEvent,
   useMap,
 } from "react-leaflet";
@@ -223,18 +224,36 @@ useEffect(() => {
           </Marker>
         )}
 
-        {lapaks.map((lapak) => (
-          <Marker
-            key={`lapak-marker-${lapak.id_lapak}`}
-            position={[lapak.latitude, lapak.longitude]}
-            icon={LapakIcon}
-            eventHandlers={{
-              click: () => handleLapakClick(lapak),
-            }}
-          >
-            <Popup>{lapak.nama_lapak}</Popup>
-          </Marker>
-        ))}
+        const categoryColors = {{
+        cafe: "#007BFF", // Warna biru untuk kategori cafe
+        warung : "#28A745", // Warna hijau untuk kategori warung
+        "kaki lima": "#FFC107", // Warna oranye untuk kategori kaki lima
+         }};
+
+{lapaks.map((lapak) => (
+  <Marker
+    key={`lapak-marker-${lapak.id_lapak}`}
+    position={[lapak.latitude, lapak.longitude]}
+    icon={LapakIcon}
+    eventHandlers={{
+      click: () => handleLapakClick(lapak),
+    }}
+  >
+    <Tooltip permanent direction="bottom" offset={[0, 10]}>
+      <span
+        style={{
+          color: "#fff",
+          backgroundColor: categoryColors[lapak.kategori_lapak.toLowerCase()] || "#000",
+          padding: "5px 10px",
+          borderRadius: "5px",
+          fontWeight: "bold",
+        }}
+      >
+        {lapak.nama_lapak}
+      </span>
+    </Tooltip>
+  </Marker>
+))}
       </MapContainer>
 
 
