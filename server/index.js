@@ -81,7 +81,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: true, // Set to true if using HTTPS
-    sameSite: 'none',
+    sameSite: 'lax',
   }
 }));
 
@@ -278,6 +278,7 @@ app.post('/api/logout', (req, res) => {
 
 // Route to check if the user is logged in and get user info
 app.get('/api/user', (req, res) => {
+  console.log("Session:", req.session);
   if (req.session.userId) {
     const query = "SELECT * FROM pengguna WHERE id_pengguna = ?";
     pool.query(query, [req.session.userId], (err, results) => {

@@ -15,7 +15,7 @@ const TopicSelectionPage = () => {
 
   const checkExistingTicket = async () => {
     try {
-      const response = await axios.get('/api/user-ticket');
+      const response = await axios.get('https://prosi-mobile.onrender.com/api/user-ticket' , { withCredentials: true,});
       if (response.data.ticket && response.data.ticket.status === 'open') {
         setExistingTicket(response.data.ticket);
       }
@@ -40,7 +40,7 @@ const TopicSelectionPage = () => {
       if (existingTicket) {
         navigate('/bantuan');
       } else {
-        const response = await axios.post('/api/create-ticket', { subject });
+        const response = await axios.post('https://prosi-mobile.onrender.com/api/create-ticket', { subject }, { withCredentials: true,});
         if (response.data.ticket) {
           navigate('/bantuan');
         }

@@ -25,11 +25,11 @@ const ClientHelpCenter = () => {
   
   const fetchOrCreateTicket = async () => {
     try {
-      const response = await axios.get('/api/user-ticket');
+      const response = await axios.get('https://prosi-mobile.onrender.com/api/user-ticket');
       if (response.data.ticket) {
         setTicket(response.data.ticket);
       } else {
-        const newTicketResponse = await axios.post('/api/create-ticket', {
+        const newTicketResponse = await axios.post('https://prosi-mobile.onrender.com/api/create-ticket', {
           subject: 'General Inquiry'
         });
         setTicket(newTicketResponse.data.ticket);
@@ -41,7 +41,7 @@ const ClientHelpCenter = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`/api/messages/${ticket.ticket_id}`);
+      const response = await axios.get(`https://prosi-mobile.onrender.com/api/messages/${ticket.ticket_id}`);
       setMessages(response.data);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -51,7 +51,7 @@ const ClientHelpCenter = () => {
   const handleSendMessage = async () => {
     if (inputMessage.trim() !== '' && ticket) {
       try {
-        await axios.post('/api/send-message', {
+        await axios.post('https://prosi-mobile.onrender.com/api/send-message', {
           ticketId: ticket.ticket_id,
           text: inputMessage,
           senderType: 'user'
@@ -71,7 +71,7 @@ const ClientHelpCenter = () => {
       formData.append('photo', file);
       formData.append('ticketId', ticket.ticket_id);
       try {
-        await axios.post('/api/send-photo', formData, {
+        await axios.post('https://prosi-mobile.onrender.com/api/send-photo', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         fetchMessages();

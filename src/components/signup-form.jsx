@@ -22,7 +22,7 @@ function SignupForm() {
     }
 
     try {
-      const response = await fetch("/api/signup", {
+      const response = await fetch("https://prosi-mobile.onrender.com/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

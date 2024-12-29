@@ -27,7 +27,7 @@ const ClientHelpCenter = () => {
 
   const fetchTicket = async () => {
     try {
-      const response = await axios.get('/api/user-ticket');
+      const response = await axios.get('https://prosi-mobile.onrender.com/api/user-ticket', { withCredentials: true,});
       if (response.data.ticket) {
         setTicket(response.data.ticket);
       } else {
@@ -41,7 +41,7 @@ const ClientHelpCenter = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`/api/messages/${ticket.ticket_id}`);
+      const response = await axios.get(`https://prosi-mobile.onrender.com/api/messages/${ticket.ticket_id}`);
       setMessages(response.data);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -54,11 +54,13 @@ const ClientHelpCenter = () => {
         await endChat();
       } else {
         try {
-          await axios.post('/api/send-message', {
+          await axios.post('https://prosi-mobile.onrender.com/api/send-message', {
             ticketId: ticket.ticket_id,
             text: inputMessage,
-            senderType: 'user'
-          });
+            senderType: 'user',
+          }, 
+          { withCredentials: true }
+        );
           setInputMessage('');
           fetchMessages();
         } catch (error) {
@@ -70,7 +72,7 @@ const ClientHelpCenter = () => {
 
   const endChat = async () => {
     try {
-      await axios.post(`/api/end-chat/${ticket.ticket_id}`);
+      await axios.post(`https://prosi-mobile.onrender.com/api/end-chat/${ticket.ticket_id}`);
       navigate('/Pilihsubject');
     } catch (error) {
       console.error('Error ending chat:', error);
@@ -84,8 +86,9 @@ const ClientHelpCenter = () => {
       formData.append('photo', file);
       formData.append('ticketId', ticket.ticket_id);
       try {
-        await axios.post('/api/send-photo', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+        await axios.post('https://prosi-mobile.onrender.com/api/send-photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true,
         });
         fetchMessages();
       } catch (error) {
@@ -123,7 +126,7 @@ const ClientHelpCenter = () => {
               {message.message}
               {message.file_path && (
                 <img
-                  src={`/api/image/${message.message_id}`}
+                  src={`https://prosi-mobile.onrender.com/api/image/${message.message_id}`}
                   alt="Attachment"
                   className="mt-2 max-w-xs"
                 />

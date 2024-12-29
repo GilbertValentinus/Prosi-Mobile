@@ -26,7 +26,9 @@ const FavoriteList = ({ lapak }) => {
   useEffect(() => {
     const fetchUserAndFavorites = async () => {
       try {
-        const userResponse = await axios.get('/api/user');
+        const userResponse = await axios.get('https://prosi-mobile.onrender.com/api/user', { withCredentials: true,});
+        axios.defaults.withCredentials = true;
+        // headers: { Authorization: `Bearer ${yourToken}` }
         if (!userResponse.data.success) {
           setError('User tidak ditemukan atau belum login');
           setLoading(false);
@@ -34,7 +36,7 @@ const FavoriteList = ({ lapak }) => {
         }
         
         const userId = userResponse.data.user.id_pengguna;
-        const favoritesResponse = await axios.get(`/api/lapak/favorite/${userId}`);
+        const favoritesResponse = await axios.get(`https://prosi-mobile.onrender.com/api/lapak/favorite/${userId}`);
         
         if (favoritesResponse.data.success) {
           const uniqueLapaks = favoritesResponse.data.lapaks.reduce((acc, current) => {
