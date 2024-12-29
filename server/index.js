@@ -538,7 +538,7 @@ app.get('/api/lapak', (req, res) => {
         l.latitude, 
         l.longitude, 
         l.situs, 
-        l.kategori_lapak
+        l.kategori_lapak,
         l.foto_lapak,
         b.jam_buka,
         b.jam_tutup,
