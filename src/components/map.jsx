@@ -36,24 +36,36 @@ const LapakIcon = L.icon({
 
 const getColorForCategory = (category) => {
   const colors = {
-    kaki: "#007BFF",
-    cafe: "#28A745",
-    warung: "#FFC107",
+    kaki: "#0056b3", // Lebih gelap dari #007BFF
+    cafe: "#1e7b34", // Lebih gelap dari #28A745
+    warung: "#cc8a00", // Lebih gelap dari #FFC107
   };
   return colors[category?.toLowerCase()] || "#000";
 };
 
+const getIconForCategory = (category) => {
+  const icons = {
+    kaki: "🍽️",
+    cafe: "☕",
+    warung: "🍴",
+  };
+  return icons[category?.toLowerCase()] || "🍽️";
+};
+
+
 const customTooltipStyle = `
   .leaflet-tooltip {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+    background: #F5F5F5; /* Warna latar gelap */
+    color: #1C1C1E; /* Warna teks putih agar kontras */
+    border-radius: 8px; /* Sudut membulat */
+    padding: 5px; /* Spasi lebih banyak agar terlihat lebih rapi */
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2); /* Efek bayangan */
   }
   .leaflet-tooltip-bottom:before {
-    display: none !important;
+    display: none !important; /* Hilangkan segitiga kecil */
   }
 `;
+
 
 const fetchAddress = async (lat, lng) => {
   try {
@@ -273,7 +285,7 @@ function Map() {
                     textAlign: "center",
                   }}
                 >
-                  {lapak.nama_lapak}
+                  {getIconForCategory(lapak.kategori_lapak)}{lapak.nama_lapak}
                 </div>
               </Tooltip>
             )}

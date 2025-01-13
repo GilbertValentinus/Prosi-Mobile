@@ -8,6 +8,11 @@ const FavoriteList = ({ lapak }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const formatTime = (time) => {
+    const [hour, minute] = (time || '00:00').split(':');
+    return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+  };
+
   const updateStatus = (lapak) => {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -17,9 +22,9 @@ const FavoriteList = ({ lapak }) => {
     const closeTime = closeHour * 60 + closeMinute;
 
     if (currentTime >= openTime && currentTime < closeTime) {
-      return `Buka - Tutup pada ${lapak.jam_tutup}`;
+      return `Buka - Tutup pada ${formatTime(lapak.jam_tutup)}`;
     } else {
-      return `Tutup - Buka pada ${lapak.jam_buka}`;
+      return `Tutup - Buka pada ${formatTime(lapak.jam_buka)}`;
     }
   };
 

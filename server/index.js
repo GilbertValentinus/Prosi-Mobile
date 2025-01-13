@@ -208,7 +208,7 @@ app.post('/api/forgot-password', async (req, res) => {
       }
 
       // Send email
-      const resetLink = `https://prosi.galileobimbel.com/reset-password/${token}`;
+      const resetLink = `http://localhost:5173/reset-password/${token}`;
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,

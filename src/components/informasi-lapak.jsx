@@ -97,11 +97,14 @@ const LapakInfo = ({ lapak, onClose }) => {
       const [closeHour, closeMinute] = lapak.jam_tutup.split(":").map(Number);
       const openTime = openHour * 60 + openMinute;
       const closeTime = closeHour * 60 + closeMinute;
-
+  
+      const formatTime = (hour, minute) =>
+        `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  
       if (currentTime >= openTime && currentTime < closeTime) {
-        setStatusLapak(`Buka - Tutup pada ${lapak.jam_tutup}`);
+        setStatusLapak(`Buka - Tutup pada ${formatTime(closeHour, closeMinute)}`);
       } else {
-        setStatusLapak(`Tutup - Buka pada ${lapak.jam_buka}`);
+        setStatusLapak(`Tutup - Buka pada ${formatTime(openHour, openMinute)}`);
       }
     } else {
       setStatusLapak("Waktu buka dan tutup tidak tersedia");

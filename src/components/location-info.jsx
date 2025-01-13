@@ -33,7 +33,7 @@ function LocationInfo({ locationData }) {
 
         <div className="border-t border-gray-600 pt-4">
           <p
-            className="text-white text-[14px] font-[400] cursor-pointer hover:text-blue-400"
+            className="text-blue-500 text-[14px] font-[400] cursor-pointer underline hover:text-blue-400"
             onClick={handleNavigateToClaimLapak}
           >
             Apakah Anda Pemilik Lapak?

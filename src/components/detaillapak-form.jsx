@@ -72,7 +72,7 @@ function DetailLapak() {
     const fetchLapakData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`https://prosi-mobile.onrender.com/lapak/${id}`, {
+        const response = await fetch(`https://prosi-mobile.onrender.com/api/lapak/${id}`, {
           credentials: 'include'
         });
         
